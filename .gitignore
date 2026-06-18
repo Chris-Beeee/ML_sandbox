@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+*.pyc
+user_history.json
+# Note: movies_dataset.csv is kept since it's the core matrix for the ML engine to function out of the box.
