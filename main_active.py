@@ -48,11 +48,15 @@ def main():
             
             # Get Feedback
             while True:
-                user_input = input("Do you like this kind of movie? (y = Yes / n = No / s = Skip / q = Quit): ").strip().lower()
+                user_input = input("Do you like this kind of movie? (y = Yes / n = No / s = Skip / r = Reset / q = Quit): ").strip().lower()
                 
                 if user_input in ['q', 'quit', 'exit']:
                     print("\nSaving feedback and exiting. Goodbye!")
                     sys.exit(0)
+                elif user_input in ['r', 'reset', 'clear']:
+                    print("\nScrubbing your feedback history. Neural network reset!")
+                    recommender.clear_feedback()
+                    break
                 elif user_input in ['s', 'skip']:
                     # We skip by just ignoring it and not calling add_feedback
                     # But wait, if we don't add feedback, get_next_movie might return it again next time.

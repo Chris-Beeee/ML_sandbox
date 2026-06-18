@@ -53,6 +53,14 @@ class ActiveRecommender:
         # Retrain instantly
         self.train_model()
 
+    def clear_feedback(self):
+        """Clears all feedback and resets the model."""
+        self.feedback_df = pd.DataFrame(columns=['movie_id', 'liked'])
+        if os.path.exists(self.feedback_file):
+            os.remove(self.feedback_file)
+        self.is_trained = False
+        self.model = None
+
     def train_model(self):
         """Trains the Logistic Regression model if there are enough diverse ratings."""
         if len(self.feedback_df) == 0:

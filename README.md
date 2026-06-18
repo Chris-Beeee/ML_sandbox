@@ -42,6 +42,14 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 **The Problem:** Because Max Pooling creates a massive, blended profile of everything a user loves (e.g., Action, Romance, Horror), asking for general recommendations often resulted in an overwhelming mix of genres that didn't fit a specific mood.
 **The Solution:** The `recs` command was updated to accept optional genre filters (e.g., `recs 5 Action Comedy`). The engine still relies on the user's entire profile to understand their pacing and textual preferences, but strictly filters the final output to only include movies that match the requested genres.
 
+### 8. The Ingestion Firewall
+**The Problem:** Because TMDB is a crowdsourced database, global queries often return movies with completely blank English overviews, or obscure regional films with entirely non-Latin titles (e.g., Chinese characters). These movies broke the terminal UI and were literally invisible to the text-based TF-IDF engine.
+**The Solution:** An aggressive `is_valid_movie` firewall was bolted onto `fetch_data.py`. It intercepts every single API request and drops any movie that lacks an overview or contains non-Latin characters in its title *before* it can enter the offline dataset. 
+
+### 9. Active Learning Neural Wipe
+**The Problem:** The `main_active.py` script continuously trained its Logistic Regression model on the user's historical `y/n` feedback, but there was no way to reset the model if the user wanted to start a fresh training session.
+**The Solution:** A Hard Reset (`r`) option was added to the Active Learning CLI. Triggering it instantly obliterates the `user_feedback.csv` file, wipes the model from memory, and throws the engine back into "Cold Start" randomized mode.
+
 ---
 
 ## Known ML Limitations & Future Roadmap

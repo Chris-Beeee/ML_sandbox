@@ -26,6 +26,21 @@ def get_genres(access_token):
     genres = response.json().get("genres", [])
     return {g["id"]: g["name"] for g in genres}
 
+def is_valid_movie(movie):
+    """Filters out movies with empty overviews or non-Latin (foreign character) titles."""
+    overview = str(movie.get("overview", "")).strip()
+    if not overview:
+        return False
+        
+    title = str(movie.get("title", ""))
+    import re
+    # Only allow titles composed of basic Latin, Latin-1 Supplement, Latin Extended-A/B, and general punctuation
+    is_latin = bool(re.match(r'^[\u0000-\u024F\u2000-\u206F]+$', title))
+    if not is_latin:
+        return False
+        
+    return True
+
 def fetch_endpoint(endpoint, access_token, genre_mapping, limit):
     """Fetches movies from a specific TMDB endpoint."""
     movies_data = []
@@ -52,6 +67,9 @@ def fetch_endpoint(endpoint, access_token, genre_mapping, limit):
         for movie in results:
             if total_fetched >= limit:
                 break
+                
+            if not is_valid_movie(movie):
+                continue
                 
             genre_names = [genre_mapping.get(gid, "Unknown") for gid in movie.get("genre_ids", [])]
             
@@ -115,8 +133,10 @@ def search_and_append_movie(search_title):
     response.raise_for_status()
     
     results = response.json().get("results", [])
+    results = [m for m in results if is_valid_movie(m)]
+    
     if not results:
-        print(f"[Dynamic Fetch] Movie '{search_title}' does not exist on TMDB.")
+        print(f"[Dynamic Fetch] Movie '{search_title}' does not exist on TMDB (or is invalid).")
         return None
         
     # Smart Auto-Selection for API results
@@ -223,6 +243,9 @@ def fetch_collection_movies(collection_id):
     collection_movies = []
     
     for part in parts:
+        if not is_valid_movie(part):
+            continue
+            
         genre_names = [genre_mapping.get(gid, "Unknown") for gid in part.get("genre_ids", [])]
         collection_movies.append({
             "id": part["id"],
