@@ -134,8 +134,30 @@ class ActiveRecommender:
         # Column 1 is the probability of class 1 (Liked)
         probabilities = self.model.predict_proba(X_unrated)[:, 1]
         
-        # Find the index of the movie with the highest probability
-        best_local_idx = np.argmax(probabilities)
+        is_exploration = False
+        epsilon = np.random.rand()
+        
+        # 20% Exploration (Epsilon-Greedy)
+        if epsilon < 0.20:
+            # Find wildcard movies in the middle of the decision boundary (40% to 60%)
+            wildcard_mask = (probabilities >= 0.40) & (probabilities <= 0.60)
+            wildcard_indices = np.where(wildcard_mask)[0]
+            
+            # If none found, expand the boundary slightly
+            if len(wildcard_indices) == 0:
+                wildcard_mask = (probabilities >= 0.30) & (probabilities <= 0.70)
+                wildcard_indices = np.where(wildcard_mask)[0]
+                
+            if len(wildcard_indices) > 0:
+                best_local_idx = np.random.choice(wildcard_indices)
+                is_exploration = True
+            else:
+                # Fallback to exploitation if no middle ground exists
+                best_local_idx = np.argmax(probabilities)
+        else:
+            # 80% Exploitation
+            best_local_idx = np.argmax(probabilities)
+            
         best_global_idx = unrated_indices[best_local_idx]
         
         movie = self.df.iloc[best_global_idx]
@@ -145,5 +167,6 @@ class ActiveRecommender:
             "genres": movie['genres'], 
             "overview": movie['overview'],
             "probability": round(probabilities[best_local_idx] * 100, 2),
-            "is_ml": True
+            "is_ml": True,
+            "is_exploration": is_exploration
         }

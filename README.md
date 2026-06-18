@@ -54,4 +54,16 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 **The Problem:** The "Vocabulary Mismatch Problem." Because the TF-IDF engine relies strictly on the literal words present in a movie's plot overview, it mathematically failed to connect movies that were semantically identical but descriptively different (e.g., *The Batman* is described as a "dark detective crime thriller," while *Spiderman* is described as a "superhero saving the world with magic/powers"). 
 **The Solution:** The pipeline was heavily upgraded to actively scrape **TMDB Community Keywords** (e.g., `superhero`, `based on comic`, `spoof`) for every movie. These human-assigned tags are injected directly into the ML feature space with a **2x Mathematical Multiplier**, granting both ML engines immediate semantic awareness and successfully bridging massive vocabulary gaps between related genres.
 
+### 11. Execution vs Taste Split
+**The Problem:** The Active Learning neural network only learns from textual features (genres, keywords, plot). If the UI asked "Do you like this?" and the user voted `n` because the movie was poorly executed (e.g., 2/10 rating), the model incorrectly assumed the user hated the *genre*.
+**The Solution:** A `b = Bad Execution (But I like the genre)` option was added to the quiz. This mathematically records a positive vote (`1`) for the textual features, correctly teaching the model that the user's *taste* aligns with the genre, regardless of the individual film's quality.
+
+### 12. Discovery Temperature
+**The Problem:** Because the Profile Recommendation engine uses a deterministic mathematical matrix, asking for recommendations for a static profile (e.g., `recs horror`) yielded the exact same Top 5 films every single time.
+**The Solution:** A "Discovery Temperature" was injected into the final scoring equation in `recommender_profile.py`. It applies a randomized mathematical penalty (between `0.85` and `1.0`) to every candidate film's score. This gently shuffles the mathematical rankings, allowing close-tie films to bubble to the surface and ensuring completely fresh recommendations on every search.
+
+### 13. Epsilon-Greedy Exploration
+**The Problem:** The Active Learning neural network operated with 100% "Greedy Exploitation," mathematically meaning it *always* returned the #1 highest probability movie. If a user exclusively voted "yes" for one genre, the engine became trapped in a 99% probability echo chamber, refusing to ever test other genres.
+**The Solution:** A classic **Epsilon-Greedy Algorithm** was implemented. The engine rolls a virtual 100-sided die: 80% of the time it performs normal Exploitation, but 20% of the time it enters **Exploration Mode**. In Exploration mode, it explicitly targets a "Wildcard" movie hovering between 30%-70% probability. This systematically tests the user on unfamiliar genres to constantly challenge and widen the decision boundary.
+
 

@@ -216,6 +216,11 @@ class ProfileRecommender:
         lang_penalty = np.where(langs == 'en', 1.0, 0.5)
         weighted_scores = weighted_scores * lang_penalty
         
+        # Apply "Discovery Temperature" to prevent repetitiveness. 
+        # Multiplies every score by a random factor between 0.85 and 1.0, gently shuffling close matches.
+        temperature = np.random.uniform(0.85, 1.0, size=weighted_scores.shape)
+        weighted_scores = weighted_scores * temperature
+        
         # Sort indices to get most similar based on the NEW weighted score
         similar_indices = weighted_scores.argsort()[::-1]
         

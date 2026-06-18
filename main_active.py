@@ -28,7 +28,11 @@ def main():
             if recommender.is_trained:
                 print("🧠 ML MODEL ACTIVE: Showing highest probability matches")
             else:
-                print("🎲 COLD START: Rate some movies to train the model!")
+                valid_feedback = recommender.feedback_df[recommender.feedback_df['liked'] != -1] if hasattr(recommender, 'feedback_df') and not recommender.feedback_df.empty else []
+                if len(valid_feedback) > 0 and len(valid_feedback['liked'].unique()) < 2:
+                    print("🎲 COLD START: The AI needs at least one 'Yes' AND one 'No' vote to learn!")
+                else:
+                    print("🎲 COLD START: Rate some movies to train the model!")
             print("="*60)
             
             # Get the next movie to show
@@ -42,13 +46,16 @@ def main():
             print(f"\n🎥 TITLE  : {movie['title']}")
             print(f"🎭 GENRES : {movie['genres']}")
             if movie['is_ml']:
-                print(f"🎯 ML PREDICTED MATCH : {movie['probability']}%")
+                if movie.get('is_exploration'):
+                    print(f"🎲 ML WILDCARD EXPLORATION : {movie['probability']}% (Testing boundaries!)")
+                else:
+                    print(f"🎯 ML PREDICTED MATCH : {movie['probability']}%")
             print(f"\n📖 OVERVIEW:\n{movie['overview']}")
             print("\n" + "-"*60)
             
             # Get Feedback
             while True:
-                user_input = input("Do you like this kind of movie? (y = Yes / n = No / s = Skip / r = Reset / q = Quit): ").strip().lower()
+                user_input = input("Do you like this kind of movie? (y=Yes / n=No / b=Bad Execution / u=Unseen / r=Reset / q=Quit): ").strip().lower()
                 
                 if user_input in ['q', 'quit', 'exit']:
                     print("\nSaving feedback and exiting. Goodbye!")
@@ -57,13 +64,12 @@ def main():
                     print("\nScrubbing your feedback history. Neural network reset!")
                     recommender.clear_feedback()
                     break
-                elif user_input in ['s', 'skip']:
-                    # We skip by just ignoring it and not calling add_feedback
-                    # But wait, if we don't add feedback, get_next_movie might return it again next time.
-                    # Let's add a dummy rating of -1 to 'ignore' it, or just pass. 
-                    # For simplicity, we can just give it a temporary "skip" state, but since we are picking the max prob, 
-                    # it will keep showing up if it's the max prob. 
-                    # Let's just add it to feedback as a 'skipped' (-1) so we don't see it again.
+                elif user_input in ['b', 'bad']:
+                    print("  -> Understood! The movie is bad, but the genre is good. Logging as a YES for the neural network.")
+                    recommender.add_feedback(movie['id'], 1)
+                    break
+                elif user_input in ['u', 'unseen', 's', 'skip']:
+                    # User hasn't seen it, we ignore it for training by logging a -1
                     recommender.add_feedback(movie['id'], -1)
                     break
                 elif user_input in ['y', 'yes']:
