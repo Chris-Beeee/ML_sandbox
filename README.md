@@ -37,3 +37,16 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 ### 6. Database Expansion
 **The Problem:** The local offline matrix was hard-capped at 1,000 movies. Older, critically acclaimed films (like the original *John Wick*) had naturally fallen out of the global Top 1000 trending list, meaning they didn't exist in the local dataset and literally could not be recommended.
 **The Solution:** The offline matrix limit was massively expanded to over 4,000 unique movies, ensuring that classic masterpieces and older franchise entries are permanently preserved in the local TF-IDF calculations.
+
+### 7. Dynamic Genre Filtering
+**The Problem:** Because Max Pooling creates a massive, blended profile of everything a user loves (e.g., Action, Romance, Horror), asking for general recommendations often resulted in an overwhelming mix of genres that didn't fit a specific mood.
+**The Solution:** The `recs` command was updated to accept optional genre filters (e.g., `recs 5 Action Comedy`). The engine still relies on the user's entire profile to understand their pacing and textual preferences, but strictly filters the final output to only include movies that match the requested genres.
+
+---
+
+## Known ML Limitations & Future Roadmap
+
+### The Vocabulary Mismatch Problem
+Because the current engine uses TF-IDF (Term Frequency - Inverse Document Frequency), it relies entirely on **exact textual keyword matching** within the TMDB plot summaries and genres. It lacks true semantic awareness.
+- **The Symptom:** If a user adds the *Scream* franchise to their profile, the engine will confidently recommend other actual teen slashers (like *Bodies Bodies Bodies*) over direct slapstick parodies (like *Scary Movie*). This is because actual slashers share the dark, violent vocabulary of *Scream* (e.g., "killer", "deadly", "game"), whereas a parody's plot summary uses completely different semantic vocabulary (e.g., "spoof", "hilarious", "laughs").
+- **Future Solutions:** To overcome this, the engine could be upgraded to use **Collaborative Filtering** (recommending based on human behavior trends rather than text), or it could integrate TMDB's community **Keywords** matrix (which explicitly tags both movies with `spoof` or `teen-slasher` to bridge the semantic gap).

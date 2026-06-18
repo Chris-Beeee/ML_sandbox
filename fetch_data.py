@@ -146,6 +146,7 @@ def search_and_append_movie(search_title):
     else:
         # Disambiguation: present up to 5 choices
         print(f"\n[Dynamic Fetch] Found matches for '{search_title}':")
+        print("  (Hint: To add an entire franchise, select any movie from it first)")
         display_results = results[:5]
         for i, res in enumerate(display_results, 1):
             year = res.get('release_date', 'Unknown')[:4] if res.get('release_date') else 'Unknown'
@@ -158,7 +159,7 @@ def search_and_append_movie(search_title):
                 idx = int(choice)
                 if idx == 0:
                     print("Search cancelled.")
-                    return None
+                    return "CANCELLED"
                 elif 1 <= idx <= len(display_results):
                     best_match = display_results[idx - 1]
                     break

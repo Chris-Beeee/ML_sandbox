@@ -112,12 +112,16 @@ class ProfileRecommender:
                 
         if not matched_title:
             # Fallback to Dynamic Fetch if no local matches or user selected 0
+            from fetch_data import search_and_append_movie
             fetched_title = search_and_append_movie(movie_title)
-            if not fetched_title:
+            
+            if fetched_title == "CANCELLED":
+                return "Search cancelled by user."
+            elif not fetched_title:
                 return f"Movie '{movie_title}' not found on TMDB."
+                
             self.load_data()
             matched_title = fetched_title
-            
         if matched_title not in self.history:
             # Check for franchise
             matched_row = self.df[self.df['title'] == matched_title]
@@ -160,10 +164,9 @@ class ProfileRecommender:
         else:
             return f"'{matched_title}' is already in your profile."
 
-    def get_profile_recommendations(self, top_n=5):
-        """Calculates recommendations based on the average vector of all history movies."""
+    def get_profile_recommendations(self, top_n=5, filter_genres=None):
         if not self.history:
-            return "Your profile is empty. Add some movies first!"
+            return "Profile is empty. Add some movies first!"
             
         history_indices = []
         for title in self.history:
@@ -228,6 +231,13 @@ class ProfileRecommender:
             is_latin = bool(re.match(r'^[\u0000-\u024F\u2000-\u206F]+$', movie_title))
             if not is_latin:
                 continue
+                
+            # Filter by specific requested genres
+            if filter_genres:
+                movie_genres = str(movie.get('genres', '')).lower()
+                has_genres = all(g.lower() in movie_genres for g in filter_genres)
+                if not has_genres:
+                    continue
                 
             # Robustly exclude movies already in the user's history
             if normalize_for_check(movie_title) not in normalized_history:

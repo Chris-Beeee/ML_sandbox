@@ -9,7 +9,7 @@ def print_menu(profile_length):
     print("Commands:")
     print("  [movie name] : Add a movie to your profile")
     print("  recs [num]   : Generate [num] recommendations (default 5)")
-    print("  clear        : Wipe your profile clear and start over")
+    print("  clear        : Wipe your profile clearclear and start over")
     print("  quit         : Exit the application")
     print("="*50)
 
@@ -54,13 +54,20 @@ def main():
                 print("Profile cleared.")
                 
             elif command.startswith('recs'):
-                # Allow user to specify number of results, e.g. "recs 10"
+                # Allow user to specify number of results and optional genre filters, e.g. "recs 10 action comedy"
                 parts = command.split()
                 top_n = 5
-                if len(parts) > 1 and parts[1].isdigit():
-                    top_n = int(parts[1])
+                filter_genres = []
+                
+                if len(parts) > 1:
+                    if parts[1].isdigit():
+                        top_n = int(parts[1])
+                        filter_genres = parts[2:]
+                    else:
+                        top_n = 5
+                        filter_genres = parts[1:]
                     
-                results = recommender.get_profile_recommendations(top_n=top_n)
+                results = recommender.get_profile_recommendations(top_n=top_n, filter_genres=filter_genres)
                 
                 if isinstance(results, str):
                     print(f"\n-> {results}")
