@@ -50,6 +50,10 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 **The Problem:** The `main_active.py` script continuously trained its Logistic Regression model on the user's historical `y/n` feedback, but there was no way to reset the model if the user wanted to start a fresh training session.
 **The Solution:** A Hard Reset (`r`) option was added to the Active Learning CLI. Triggering it instantly obliterates the `user_feedback.csv` file, wipes the model from memory, and throws the engine back into "Cold Start" randomized mode.
 
+### 10. TMDB Community Keywords Integration
+**The Problem:** The "Vocabulary Mismatch Problem." Because the TF-IDF engine relies strictly on the literal words present in a movie's plot overview, it mathematically failed to connect movies that were semantically identical but descriptively different (e.g., *The Batman* is described as a "dark detective crime thriller," while *Spiderman* is described as a "superhero saving the world with magic/powers"). 
+**The Solution:** The pipeline was heavily upgraded to actively scrape **TMDB Community Keywords** (e.g., `superhero`, `based on comic`, `spoof`) for every movie. These human-assigned tags are injected directly into the ML feature space with a **2x Mathematical Multiplier**, granting both ML engines immediate semantic awareness and successfully bridging massive vocabulary gaps between related genres.
+
 ---
 
 ## Known ML Limitations & Future Roadmap

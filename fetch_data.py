@@ -41,6 +41,18 @@ def is_valid_movie(movie):
         
     return True
 
+def fetch_movie_keywords(movie_id, access_token):
+    """Fetches keywords for a specific movie."""
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}/keywords"
+    headers = {"accept": "application/json", "Authorization": f"Bearer {access_token}"}
+    try:
+        response = requests.get(url, headers=headers, timeout=5)
+        response.raise_for_status()
+        keywords = response.json().get("keywords", [])
+        return ", ".join([k["name"] for k in keywords])
+    except Exception:
+        return ""
+
 def fetch_endpoint(endpoint, access_token, genre_mapping, limit):
     """Fetches movies from a specific TMDB endpoint."""
     movies_data = []
@@ -72,12 +84,14 @@ def fetch_endpoint(endpoint, access_token, genre_mapping, limit):
                 continue
                 
             genre_names = [genre_mapping.get(gid, "Unknown") for gid in movie.get("genre_ids", [])]
+            keywords = fetch_movie_keywords(movie["id"], access_token)
             
             movies_data.append({
                 "id": movie["id"],
                 "title": movie["title"],
                 "overview": movie.get("overview", ""),
                 "genres": ", ".join(genre_names),
+                "keywords": keywords,
                 "vote_average": movie.get("vote_average", 0.0),
                 "original_language": movie.get("original_language", "en")
             })
@@ -188,12 +202,14 @@ def search_and_append_movie(search_title):
     matched_title = best_match["title"]
     
     genre_names = [genre_mapping.get(gid, "Unknown") for gid in best_match.get("genre_ids", [])]
+    keywords = fetch_movie_keywords(best_match["id"], access_token)
     
     new_movie = pd.DataFrame([{
         "id": best_match["id"],
         "title": matched_title,
         "overview": best_match.get("overview", ""),
         "genres": ", ".join(genre_names),
+        "keywords": keywords,
         "vote_average": best_match.get("vote_average", 0.0),
         "original_language": best_match.get("original_language", "en")
     }])
@@ -247,11 +263,14 @@ def fetch_collection_movies(collection_id):
             continue
             
         genre_names = [genre_mapping.get(gid, "Unknown") for gid in part.get("genre_ids", [])]
+        keywords = fetch_movie_keywords(part["id"], access_token)
+        
         collection_movies.append({
             "id": part["id"],
             "title": part["title"],
             "overview": part.get("overview", ""),
             "genres": ", ".join(genre_names),
+            "keywords": keywords,
             "vote_average": part.get("vote_average", 0.0),
             "original_language": part.get("original_language", "en"),
             "release_date": part.get("release_date", "")

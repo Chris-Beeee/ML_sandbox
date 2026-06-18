@@ -26,9 +26,14 @@ class ProfileRecommender:
         self.df = pd.read_csv(self.dataset_path)
         self.df['overview'] = self.df['overview'].fillna('')
         self.df['genres'] = self.df['genres'].fillna('')
-        # Artificially boost the weight of genres by repeating them 2 times 
-        # so they aren't drowned out by the long text in the overview.
-        self.df['combined_features'] = (self.df['genres'] + " ") * 2 + self.df['overview']
+        
+        # Handle backwards compatibility if dataset hasn't been upgraded yet
+        if 'keywords' not in self.df.columns:
+            self.df['keywords'] = ""
+        self.df['keywords'] = self.df['keywords'].fillna('')
+        
+        # Weight human-assigned tags higher than plot overview text
+        self.df['combined_features'] = (self.df['genres'] + " ") * 2 + (self.df['keywords'] + " ") * 2 + self.df['overview']
         
         self.vectorizer = TfidfVectorizer(stop_words='english')
         self.tfidf_matrix = self.vectorizer.fit_transform(self.df['combined_features'])
