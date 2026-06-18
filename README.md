@@ -54,11 +54,4 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 **The Problem:** The "Vocabulary Mismatch Problem." Because the TF-IDF engine relies strictly on the literal words present in a movie's plot overview, it mathematically failed to connect movies that were semantically identical but descriptively different (e.g., *The Batman* is described as a "dark detective crime thriller," while *Spiderman* is described as a "superhero saving the world with magic/powers"). 
 **The Solution:** The pipeline was heavily upgraded to actively scrape **TMDB Community Keywords** (e.g., `superhero`, `based on comic`, `spoof`) for every movie. These human-assigned tags are injected directly into the ML feature space with a **2x Mathematical Multiplier**, granting both ML engines immediate semantic awareness and successfully bridging massive vocabulary gaps between related genres.
 
----
 
-## Known ML Limitations & Future Roadmap
-
-### The Vocabulary Mismatch Problem
-Because the current engine uses TF-IDF (Term Frequency - Inverse Document Frequency), it relies entirely on **exact textual keyword matching** within the TMDB plot summaries and genres. It lacks true semantic awareness.
-- **The Symptom:** If a user adds the *Scream* franchise to their profile, the engine will confidently recommend other actual teen slashers (like *Bodies Bodies Bodies*) over direct slapstick parodies (like *Scary Movie*). This is because actual slashers share the dark, violent vocabulary of *Scream* (e.g., "killer", "deadly", "game"), whereas a parody's plot summary uses completely different semantic vocabulary (e.g., "spoof", "hilarious", "laughs").
-- **Future Solutions:** To overcome this, the engine could be upgraded to use **Collaborative Filtering** (recommending based on human behavior trends rather than text), or it could integrate TMDB's community **Keywords** matrix (which explicitly tags both movies with `spoof` or `teen-slasher` to bridge the semantic gap).
