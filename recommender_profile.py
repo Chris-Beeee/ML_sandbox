@@ -94,6 +94,7 @@ class ProfileRecommender:
         
         matched_title = None
         movie_id = None
+        year = 'Unknown'
         
         if not exact_match.empty and len(exact_match) == 1:
             matched_title = exact_match.iloc[0]['title']
@@ -136,7 +137,7 @@ class ProfileRecommender:
                 return f"Movie '{movie_title}' not found on TMDB."
                 
             self.load_data()
-            movie_id, matched_title = fetched
+            movie_id, matched_title, year = fetched
             movie_id = int(movie_id)
             
         history_ids = [m['id'] for m in self.history]
@@ -165,14 +166,14 @@ class ProfileRecommender:
                         added_count = 0
                         for fm in franchise_movies:
                             if fm['id'] not in [m['id'] for m in self.history]:
-                                self.history.append({"id": int(fm['id']), "title": fm['title']})
+                                self.history.append({"id": int(fm['id']), "title": fm['title'], "year": fm.get('release_date', 'Unknown')[:4]})
                                 added_count += 1
                                 
                         self.save_history()
                         return f"Added '{matched_title}' and {added_count-1} other franchise films to your profile!"
         
             # Standard single movie add
-            self.history.append({"id": movie_id, "title": matched_title})
+            self.history.append({"id": movie_id, "title": matched_title, "year": year})
             self.save_history()
             return f"Added '{matched_title}' to your profile!"
         else:
@@ -190,7 +191,7 @@ class ProfileRecommender:
             return f"Movie '{movie_title}' not found on TMDB."
             
         self.load_data()
-        movie_id, matched_title = fetched
+        movie_id, matched_title, year = fetched
         movie_id = int(movie_id)
             
         history_ids = [m['id'] for m in self.history]
@@ -219,14 +220,14 @@ class ProfileRecommender:
                         added_count = 0
                         for fm in franchise_movies:
                             if fm['id'] not in [m['id'] for m in self.history]:
-                                self.history.append({"id": int(fm['id']), "title": fm['title']})
+                                self.history.append({"id": int(fm['id']), "title": fm['title'], "year": fm.get('release_date', 'Unknown')[:4]})
                                 added_count += 1
                                 
                         self.save_history()
                         return f"Added '{matched_title}' and {added_count-1} other franchise films to your profile!"
         
             # Standard single movie add
-            self.history.append({"id": movie_id, "title": matched_title})
+            self.history.append({"id": movie_id, "title": matched_title, "year": year})
             self.save_history()
             return f"Added '{matched_title}' to your profile!"
         else:

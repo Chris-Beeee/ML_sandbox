@@ -225,9 +225,7 @@ def search_and_append_movie(search_title):
             print(f"[Dynamic Fetch] '{matched_title}' is already in the dataset under its ID.")
     else:
         new_movie.to_csv(DATASET_FILE, index=False)
-        print(f"[Dynamic Fetch] Created dataset with '{matched_title}'.")
-        
-    return best_match["id"], matched_title
+    return best_match["id"], matched_title, best_match.get("release_date", "Unknown")[:4]
 
 def check_movie_collection(movie_id):
     """Checks if a movie belongs to a collection and returns (collection_id, collection_name)."""
