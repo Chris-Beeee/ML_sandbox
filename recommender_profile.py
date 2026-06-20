@@ -85,6 +85,7 @@ class ProfileRecommender:
             target_movie = matches[0]
         else:
             print(f"\nFound multiple matches for '{search_term}' in your profile:")
+            print("  (Hint: To remove an entire franchise, just select any movie from it first)")
             for i, m in enumerate(matches, 1):
                 year = m.get('year', 'Unknown')
                 print(f"  {i}. {m['title']} ({year})")
