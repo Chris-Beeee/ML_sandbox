@@ -104,3 +104,7 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 ### 24. Single-Match UX & Pagination Polish
 **The Problem:** The introduction of the pagination menu created a poor UX for unique movies. Searching for a film with exactly 1 result (e.g. "They Live") still printed a full pagination menu and asked the user to manually type "1", which was tedious. Furthermore, the menu still offered an `N. Next Page` option even if there were 5 or fewer total results, leading to confusing pagination wraparounds.
 **The Solution:** The local search logic was updated to automatically bypass the selection menu and instantly import the movie if exactly 1 match is found in the offline dataset. Additionally, the `N. Next Page` prompt is now dynamically hidden in both local and online searches if the total number of results fits onto a single page.
+
+### 25. Multi-Select Graceful Degradation
+**The Problem:** When using the new multi-select input (e.g., `1, 2, 3, 4`), if any of the selected numbers corresponded to a movie the user already had in their profile, the validation logic would reject the *entire* comma-separated string and throw an "Invalid choice" error, forcing the user to retype the numbers without the invalid index.
+**The Solution:** The multi-select parsing logic was updated to gracefully skip indices that correspond to already-owned movies while continuing to parse and append the valid selections from the rest of the string.
