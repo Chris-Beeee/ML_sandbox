@@ -34,7 +34,7 @@ def main():
     if recommender.history:
         print(f"Loaded existing profile with {len(recommender.history)} movies:")
         for m in recommender.history:
-            print(f" - {m}")
+            print(f" - {m['title']}")
     
     while True:
         try:

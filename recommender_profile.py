@@ -41,7 +41,22 @@ class ProfileRecommender:
     def load_history(self):
         if os.path.exists(self.history_file):
             with open(self.history_file, 'r') as f:
-                self.history = json.load(f)
+                raw_history = json.load(f)
+                
+            # Check for migration
+            if raw_history and isinstance(raw_history[0], str):
+                print("\n[Migration] Upgrading user_history.json to ID-based schema...")
+                new_history = []
+                for title in raw_history:
+                    match = self.df[self.df['title'] == title]
+                    if not match.empty:
+                        m_id = int(match.iloc[0]['id'])
+                        new_history.append({"id": m_id, "title": title})
+                self.history = new_history
+                self.save_history()
+                print(f"[Migration] Upgrade complete! Converted {len(new_history)} movies.")
+            else:
+                self.history = raw_history
         else:
             self.history = []
 
@@ -127,43 +142,46 @@ class ProfileRecommender:
                 
             self.load_data()
             matched_title = fetched_title
-        if matched_title not in self.history:
-            # Check for franchise
-            matched_row = self.df[self.df['title'] == matched_title]
-            if not matched_row.empty:
-                movie_id = matched_row.iloc[0]['id']
-                
-                # Import here to avoid circular dependencies if any
-                from fetch_data import check_movie_collection, fetch_collection_movies, append_multiple_movies
-                
-                col_id, col_name = check_movie_collection(movie_id)
-                if col_id:
-                    print(f"\n[Franchise Detected] '{matched_title}' belongs to '{col_name}'.")
-                    print("Fetching franchise details...")
-                    franchise_movies = fetch_collection_movies(col_id)
-                    
-                    if franchise_movies:
-                        print(f"This collection contains {len(franchise_movies)} movies:")
-                        for fm in franchise_movies:
-                            year = fm.get('release_date', 'Unknown')[:4] if fm.get('release_date') else 'Unknown'
-                            print(f"  - {fm['title']} ({year})")
-                            
-                        add_franchise = input(f"\nWould you like to add all {len(franchise_movies)} movies to your profile? (y/n): ").strip().lower()
-                        if add_franchise == 'y':
-                            append_multiple_movies(franchise_movies)
-                            self.load_data() # Reload so the new movies are in the TF-IDF matrix
-                            
-                            added_count = 0
-                            for fm in franchise_movies:
-                                if fm['title'] not in self.history:
-                                    self.history.append(fm['title'])
-                                    added_count += 1
-                                    
-                            self.save_history()
-                            return f"Added '{matched_title}' and {added_count-1} other franchise films to your profile!"
+        # Get movie ID for matched_title
+        matched_row = self.df[self.df['title'] == matched_title]
+        movie_id = None
+        if not matched_row.empty:
+            movie_id = int(matched_row.iloc[0]['id'])
             
+        history_ids = [m['id'] for m in self.history]
+        
+        if movie_id and movie_id not in history_ids:
+            # Check for franchise
+            from fetch_data import check_movie_collection, fetch_collection_movies, append_multiple_movies
+            
+            col_id, col_name = check_movie_collection(movie_id)
+            if col_id:
+                print(f"\n[Franchise Detected] '{matched_title}' belongs to '{col_name}'.")
+                print("Fetching franchise details...")
+                franchise_movies = fetch_collection_movies(col_id)
+                
+                if franchise_movies:
+                    print(f"This collection contains {len(franchise_movies)} movies:")
+                    for fm in franchise_movies:
+                        year = fm.get('release_date', 'Unknown')[:4] if fm.get('release_date') else 'Unknown'
+                        print(f"  - {fm['title']} ({year})")
+                        
+                    add_franchise = input(f"\nWould you like to add all {len(franchise_movies)} movies to your profile? (y/n): ").strip().lower()
+                    if add_franchise == 'y':
+                        append_multiple_movies(franchise_movies)
+                        self.load_data() # Reload so the new movies are in the TF-IDF matrix
+                        
+                        added_count = 0
+                        for fm in franchise_movies:
+                            if fm['id'] not in [m['id'] for m in self.history]:
+                                self.history.append({"id": fm['id'], "title": fm['title']})
+                                added_count += 1
+                                
+                        self.save_history()
+                        return f"Added '{matched_title}' and {added_count-1} other franchise films to your profile!"
+        
             # Standard single movie add
-            self.history.append(matched_title)
+            self.history.append({"id": movie_id, "title": matched_title})
             self.save_history()
             return f"Added '{matched_title}' to your profile!"
         else:
@@ -183,43 +201,46 @@ class ProfileRecommender:
         self.load_data()
         matched_title = fetched_title
         
-        if matched_title not in self.history:
-            # Check for franchise
-            matched_row = self.df[self.df['title'] == matched_title]
-            if not matched_row.empty:
-                movie_id = matched_row.iloc[0]['id']
-                
-                # Import here to avoid circular dependencies if any
-                from fetch_data import check_movie_collection, fetch_collection_movies, append_multiple_movies
-                
-                col_id, col_name = check_movie_collection(movie_id)
-                if col_id:
-                    print(f"\n[Franchise Detected] '{matched_title}' belongs to '{col_name}'.")
-                    print("Fetching franchise details...")
-                    franchise_movies = fetch_collection_movies(col_id)
-                    
-                    if franchise_movies:
-                        print(f"This collection contains {len(franchise_movies)} movies:")
-                        for fm in franchise_movies:
-                            year = fm.get('release_date', 'Unknown')[:4] if fm.get('release_date') else 'Unknown'
-                            print(f"  - {fm['title']} ({year})")
-                            
-                        add_franchise = input(f"\nWould you like to add all {len(franchise_movies)} movies to your profile? (y/n): ").strip().lower()
-                        if add_franchise == 'y':
-                            append_multiple_movies(franchise_movies)
-                            self.load_data() # Reload so the new movies are in the TF-IDF matrix
-                            
-                            added_count = 0
-                            for fm in franchise_movies:
-                                if fm['title'] not in self.history:
-                                    self.history.append(fm['title'])
-                                    added_count += 1
-                                    
-                            self.save_history()
-                            return f"Added '{matched_title}' and {added_count-1} other franchise films to your profile!"
+        # Get movie ID for matched_title
+        matched_row = self.df[self.df['title'] == matched_title]
+        movie_id = None
+        if not matched_row.empty:
+            movie_id = int(matched_row.iloc[0]['id'])
             
+        history_ids = [m['id'] for m in self.history]
+        
+        if movie_id and movie_id not in history_ids:
+            # Check for franchise
+            from fetch_data import check_movie_collection, fetch_collection_movies, append_multiple_movies
+            
+            col_id, col_name = check_movie_collection(movie_id)
+            if col_id:
+                print(f"\n[Franchise Detected] '{matched_title}' belongs to '{col_name}'.")
+                print("Fetching franchise details...")
+                franchise_movies = fetch_collection_movies(col_id)
+                
+                if franchise_movies:
+                    print(f"This collection contains {len(franchise_movies)} movies:")
+                    for fm in franchise_movies:
+                        year = fm.get('release_date', 'Unknown')[:4] if fm.get('release_date') else 'Unknown'
+                        print(f"  - {fm['title']} ({year})")
+                        
+                    add_franchise = input(f"\nWould you like to add all {len(franchise_movies)} movies to your profile? (y/n): ").strip().lower()
+                    if add_franchise == 'y':
+                        append_multiple_movies(franchise_movies)
+                        self.load_data() # Reload so the new movies are in the TF-IDF matrix
+                        
+                        added_count = 0
+                        for fm in franchise_movies:
+                            if fm['id'] not in [m['id'] for m in self.history]:
+                                self.history.append({"id": fm['id'], "title": fm['title']})
+                                added_count += 1
+                                
+                        self.save_history()
+                        return f"Added '{matched_title}' and {added_count-1} other franchise films to your profile!"
+        
             # Standard single movie add
-            self.history.append(matched_title)
+            self.history.append({"id": movie_id, "title": matched_title})
             self.save_history()
             return f"Added '{matched_title}' to your profile!"
         else:
@@ -231,8 +252,8 @@ class ProfileRecommender:
             return "Profile is empty. Add some movies first!"
             
         history_indices = []
-        for title in self.history:
-            match = self.df[self.df['title'] == title]
+        for m in self.history:
+            match = self.df[self.df['id'] == m['id']]
             if not match.empty:
                 history_indices.append(match.index[0])
                 
