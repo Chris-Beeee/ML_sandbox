@@ -227,7 +227,7 @@ def search_and_append_movie(search_title):
         new_movie.to_csv(DATASET_FILE, index=False)
         print(f"[Dynamic Fetch] Created dataset with '{matched_title}'.")
         
-    return matched_title
+    return best_match["id"], matched_title
 
 def check_movie_collection(movie_id):
     """Checks if a movie belongs to a collection and returns (collection_id, collection_name)."""

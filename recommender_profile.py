@@ -87,32 +87,27 @@ class ProfileRecommender:
         
         exact_match = self.df[self.df['title'].apply(normalize_title) == normalized_search]
         
-        # Skip local partial matching for tiny 1 or 2 letter acronyms to avoid 
-        # "ai" matching "Captain" or "et" matching "Secrets".
         if len(movie_title) > 2:
             partial_match = self.df[self.df['title'].str.contains(movie_title, case=False, na=False, regex=False)]
         else:
             partial_match = pd.DataFrame()
         
         matched_title = None
+        movie_id = None
         
         if not exact_match.empty and len(exact_match) == 1:
-            # Auto-select exact match ONLY if there is exactly one (prevents silent auto-selection of remakes)
             matched_title = exact_match.iloc[0]['title']
+            movie_id = int(exact_match.iloc[0]['id'])
             
-            # Print FYI for sequels so the user knows they exist without being blocked
             others = partial_match[partial_match['title'] != matched_title].head(3)
             if not others.empty:
                 other_names = ", ".join(others['title'].tolist())
                 print(f"  (FYI: I also found related movies you can type: {other_names})")
         elif len(exact_match) > 1:
-            # Multiple identical titles locally! Since we don't store years locally, the local menu is useless.
-            # Force it to fall through to the TMDB fetch which has release years.
             print(f"  (Multiple local matches for '{movie_title}'. Fetching from TMDB to show release years...)")
             partial_match = pd.DataFrame()
                 
         elif not partial_match.empty:
-            # Disambiguation prompt
             print(f"\n[Local Search] Found matches for '{movie_title}':")
             display_results = partial_match.head(6)
             for i, (_, row) in enumerate(display_results.iterrows(), 1):
@@ -127,26 +122,22 @@ class ProfileRecommender:
                         break
                     elif 1 <= idx <= len(display_results):
                         matched_title = display_results.iloc[idx - 1]['title']
+                        movie_id = int(display_results.iloc[idx - 1]['id'])
                         break
                 print("Invalid choice, please try again.")
                 
         if not matched_title:
-            # Fallback to Dynamic Fetch if no local matches or user selected 0
             from fetch_data import search_and_append_movie
-            fetched_title = search_and_append_movie(movie_title)
+            fetched = search_and_append_movie(movie_title)
             
-            if fetched_title == "CANCELLED":
+            if fetched == "CANCELLED":
                 return "Search cancelled by user."
-            elif not fetched_title:
+            elif not fetched:
                 return f"Movie '{movie_title}' not found on TMDB."
                 
             self.load_data()
-            matched_title = fetched_title
-        # Get movie ID for matched_title
-        matched_row = self.df[self.df['title'] == matched_title]
-        movie_id = None
-        if not matched_row.empty:
-            movie_id = int(matched_row.iloc[0]['id'])
+            movie_id, matched_title = fetched
+            movie_id = int(movie_id)
             
         history_ids = [m['id'] for m in self.history]
         
@@ -174,7 +165,7 @@ class ProfileRecommender:
                         added_count = 0
                         for fm in franchise_movies:
                             if fm['id'] not in [m['id'] for m in self.history]:
-                                self.history.append({"id": fm['id'], "title": fm['title']})
+                                self.history.append({"id": int(fm['id']), "title": fm['title']})
                                 added_count += 1
                                 
                         self.save_history()
@@ -191,21 +182,16 @@ class ProfileRecommender:
         movie_title = movie_title.lower().strip()
         
         from fetch_data import search_and_append_movie
-        fetched_title = search_and_append_movie(movie_title)
+        fetched = search_and_append_movie(movie_title)
         
-        if fetched_title == "CANCELLED":
+        if fetched == "CANCELLED":
             return "Search cancelled by user."
-        elif not fetched_title:
+        elif not fetched:
             return f"Movie '{movie_title}' not found on TMDB."
             
         self.load_data()
-        matched_title = fetched_title
-        
-        # Get movie ID for matched_title
-        matched_row = self.df[self.df['title'] == matched_title]
-        movie_id = None
-        if not matched_row.empty:
-            movie_id = int(matched_row.iloc[0]['id'])
+        movie_id, matched_title = fetched
+        movie_id = int(movie_id)
             
         history_ids = [m['id'] for m in self.history]
         
@@ -233,7 +219,7 @@ class ProfileRecommender:
                         added_count = 0
                         for fm in franchise_movies:
                             if fm['id'] not in [m['id'] for m in self.history]:
-                                self.history.append({"id": fm['id'], "title": fm['title']})
+                                self.history.append({"id": int(fm['id']), "title": fm['title']})
                                 added_count += 1
                                 
                         self.save_history()
