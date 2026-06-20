@@ -1,6 +1,6 @@
-# Local Machine Learning Movie Recommender
+# Hybrid Machine Learning Movie Recommender
 
-This project is a local, offline Machine Learning recommendation engine that analyzes your movie history and predicts what you will want to watch next using TF-IDF Vectorization and Cosine Similarity.
+This project is a hybrid offline/online Machine Learning recommendation engine that analyzes your movie history and predicts what you will want to watch next using TF-IDF Vectorization and Cosine Similarity. It prioritizes local dataset searches for speed and privacy, while seamlessly falling back to the live TMDB API to fetch obscure titles and expansive franchises when needed.
 
 ## Core Scripts
 
