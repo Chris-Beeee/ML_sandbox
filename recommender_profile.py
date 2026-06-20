@@ -238,7 +238,7 @@ class ProfileRecommender:
                 display_results = partial_match.iloc[start_p:end_p]
                 
                 if display_results.empty:
-                    print("No more local results.")
+                    print("\\n--- No more local results! Wrapping back to Page 1... ---")
                     page = 0
                     continue
                     

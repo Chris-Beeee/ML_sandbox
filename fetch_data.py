@@ -195,9 +195,8 @@ def search_and_append_movie(search_title):
             start_idx = page * page_size
             end_idx = start_idx + page_size
             display_results = results[start_idx:end_idx]
-            
             if not display_results:
-                print("No more results.")
+                print("\\n--- No more results! Wrapping back to Page 1... ---")
                 page = 0
                 continue
                 
