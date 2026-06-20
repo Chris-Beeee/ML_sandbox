@@ -7,7 +7,8 @@ def print_menu(profile_length):
     print(f"USER PROFILE: {profile_length} movies liked.")
     print("="*50)
     print("Commands:")
-    print("  [movie name] : Add a movie to your profile")
+    print("  [movie name] : Add a movie to your profile (Offline-first)")
+    print("  fetch [name] : Add a movie, but bypass offline and force TMDB Search")
     print("  recs [num]   : Generate [num] recommendations (default 5)")
     print("  clear        : Wipe your profile clearclear and start over")
     print("  quit         : Exit the application")
@@ -75,6 +76,12 @@ def main():
                     print(f"\nBased on your unique profile, here are {top_n} matches:")
                     for i, rec in enumerate(results, 1):
                         print(f"  {i}. {rec['title']} (Final: {rec['final_score']} | Sim: {rec['similarity_score']} | Rating: {rec['vote_average']}/10) - {rec['genres']}")
+                        
+            elif command.startswith('fetch '):
+                movie_name = user_input[6:].strip()
+                print(f"Fetching '{movie_name}' from TMDB...")
+                result_msg = recommender.add_to_profile_online(movie_name)
+                print(f"-> {result_msg}")
                         
             else:
                 # Treat input as a movie title

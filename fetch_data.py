@@ -209,9 +209,9 @@ def search_and_append_movie(search_title):
         "title": matched_title,
         "overview": best_match.get("overview", ""),
         "genres": ", ".join(genre_names),
-        "keywords": keywords,
         "vote_average": best_match.get("vote_average", 0.0),
-        "original_language": best_match.get("original_language", "en")
+        "original_language": best_match.get("original_language", "en"),
+        "keywords": keywords
     }])
     
     # Append to existing CSV
@@ -270,19 +270,25 @@ def fetch_collection_movies(collection_id):
             "title": part["title"],
             "overview": part.get("overview", ""),
             "genres": ", ".join(genre_names),
-            "keywords": keywords,
             "vote_average": part.get("vote_average", 0.0),
             "original_language": part.get("original_language", "en"),
+            "keywords": keywords,
             "release_date": part.get("release_date", "")
         })
         
     return collection_movies
 
 def append_multiple_movies(movies_list):
-    """Appends multiple movies to the local dataset CSV safely."""
+    """Appends a list of movie dictionaries to the dataset."""
     if not movies_list: return
-    
     new_movies_df = pd.DataFrame(movies_list)
+    
+    # Drop release_date and ensure columns exactly match CSV header before saving
+    columns = ["id", "title", "overview", "genres", "vote_average", "original_language", "keywords"]
+    
+    # Only keep columns that actually exist in our DataFrame and are in the target list
+    existing_cols = [c for c in columns if c in new_movies_df.columns]
+    new_movies_df = new_movies_df[existing_cols]
     
     if os.path.exists(DATASET_FILE):
         existing_df = pd.read_csv(DATASET_FILE)

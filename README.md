@@ -67,3 +67,10 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 **The Solution:** A classic **Epsilon-Greedy Algorithm** was implemented. The engine rolls a virtual 100-sided die: 80% of the time it performs normal Exploitation, but 20% of the time it enters **Exploration Mode**. In Exploration mode, it explicitly targets a "Wildcard" movie hovering between 30%-70% probability. This systematically tests the user on unfamiliar genres to constantly challenge and widen the decision boundary.
 
 
+### 14. Online Search Override
+**The Problem:** Because the engine prioritized local, offline database searches to save API calls, it would aggressively auto-match the first exact title it found locally. This created a "Remake Trap"—if the local database happened to contain a 2009 remake of a film, but the user wanted the 1980 original, the engine blindly auto-selected the remake and blocked the user from fetching the original.
+**The Solution:** A dedicated `fetch [movie name]` command was added to the Profile Recommender. This explicitly overrides the local database priority, bypassing local matches entirely, and punches straight through to the TMDB API to present a full disambiguation menu of all online results.
+
+### 15. Dynamic CSV Alignment
+**The Problem:** When appending newly fetched movies into the offline CSV, the dictionary keys were being injected out-of-order due to the recent Keywords upgrade. Because pandas appends data row-by-row based on dictionary key order, keyword strings were accidentally written into the `vote_average` column, crashing the ML engine when it attempted to run math on the string data.
+**The Solution:** A hard-coded alignment firewall was added to `fetch_data.py`'s append logic. Before any dynamic fetch is written to disk, the script forcibly drops incompatible columns (like `release_date`) and re-indexes the dictionary keys to perfectly match the 7-column CSV schema, preventing data shifting.
