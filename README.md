@@ -77,3 +77,14 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 ### 16. Remake Collisions
 **The Problem:** Previously, the engine saved your history as a list of text titles (`["Hellraiser"]`). If you added the 2022 *Hellraiser*, you could never add the 1987 *Hellraiser* because the script thought you already had it!
 **The Solution:** Your history is now tracked entirely by Unique TMDB IDs, rather than text titles. You can now add infinite movies with the exact same name to your profile without the engine locking you out. When the script booted up, it automatically scanned your existing text-based history, found the correct IDs, and safely migrated your entire profile to the new JSON architecture!
+### 17. Pipeline ID Handoff Refactor
+**The Problem:** Even after migrating `user_history.json` to an ID-based schema, the TMDB Search API was returning the title *string* back to the recommender. The recommender would then search the offline dataframe for that string to find its ID, accidentally grabbing the wrong ID if multiple movies shared the same name.
+**The Solution:** The `fetch_data.py` pipeline was refactored to pass the exact TMDB ID securely into the `recommender_profile.py` engine alongside the title, completely bypassing the fatal string-based lookup.
+
+### 18. Release Year Backfill & Disambiguation
+**The Problem:** After adding support for multiple movies with the same name, the CLI simply displayed `- Hellraiser` twice with no contextual data, making it impossible to tell which one was the original and which was the remake.
+**The Solution:** An automated migration script queried the TMDB API to fetch and backfill the release year into `user_history.json` for all existing user movies. The core `fetch` and display pipelines were updated to natively append and present the `(year)` alongside titles to eliminate UI confusion.
+
+### 19. Surgical Remove Command with Franchise Purging
+**The Problem:** The only way to remove a bad recommendation was to use the `clear` command to wipe the entire profile.
+**The Solution:** A dedicated `remove [name]` command was implemented. It features a local disambiguation menu if multiple matches are found in the user's profile. Crucially, it mirrors the "add" workflow: if a user elects to remove a movie that belongs to a franchise, the script detects it and prompts the user to purge the *entire* franchise from their history in one keystroke.
