@@ -69,7 +69,7 @@ class ProfileRecommender:
         self.save_history()
 
     def add_to_profile_online(self, movie_title):
-        \"\"\"Bypasses local CSV search and queries TMDB directly for disambiguation.\"\"\"
+        """Bypasses local CSV search and queries TMDB directly for disambiguation."""
         movie_title = movie_title.lower().strip()
         
         from fetch_data import search_and_append_movie, check_movie_collection, fetch_collection_movies, append_multiple_movies
