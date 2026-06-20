@@ -15,9 +15,11 @@ class ProfileRecommender:
         self.vectorizer = None
         self.tfidf_matrix = None
         self.history = []
+        self.ignore_list = []
         
         self.load_data()
         self.load_history()
+        self.ignore_list = self.load_ignore_list()
         
     def load_data(self):
         if not os.path.exists(self.dataset_path):
