@@ -11,6 +11,7 @@ def print_menu(profile_length):
     print("  fetch [name] : Add a movie, but bypass offline and force TMDB Search")
     print("  recs [num]   : Generate [num] recommendations (default 5)")
     print("  remove [name]: Remove a movie (or franchise) from your profile")
+    print("  profile      : Show all movies currently in your profile")
     print("  clear        : Wipe your profile clear and start over")
     print("  quit         : Exit the application")
     print("="*50)
@@ -55,6 +56,15 @@ def main():
             elif command == 'clear':
                 recommender.clear_profile()
                 print("Profile cleared.")
+                
+            elif command == 'profile':
+                if recommender.history:
+                    print(f"\nCurrent profile ({len(recommender.history)} movies):")
+                    for m in recommender.history:
+                        year = m.get('year', 'Unknown')
+                        print(f" - {m['title']} ({year})")
+                else:
+                    print("\nYour profile is currently empty.")
                 
             elif command.startswith('recs'):
                 # Allow user to specify number of results and optional genre filters, e.g. "recs 10 action comedy"
