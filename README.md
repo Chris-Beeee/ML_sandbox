@@ -112,3 +112,7 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 ### 26. Pre-Filtering Search Results & Automatic TMDB Fallback
 **The Problem:** Search results (both local and online) displayed movies the user already owned, merely appending `(Already in profile)` next to them. This unnecessarily cluttered the selection menus.
 **The Solution:** The engine now aggressively pre-filters the search datasets before generating the pagination menu, completely removing already-owned movies. As an added benefit, if the user searches the local offline database for a franchise they entirely own (e.g., "Gremlins"), the engine correctly identifies that there are 0 *new* movies available offline and seamlessly triggers an automatic fallback to the live TMDB API to hunt for unowned sequels or adaptations.
+
+### 27. Word Boundary Enforcement for Local Searches
+**The Problem:** The offline dataset search used basic substring matching. If a user searched for "Omen" (expecting "The Omen"), the engine would retrieve every single movie containing the substring "omen", resulting in an entire menu filled with movies featuring the word "Women".
+**The Solution:** The local pandas search query was rewritten to use strict Regex word boundaries (`\b`). The offline search will now only match exact, standalone words, bringing its search intelligence closer to TMDB's native search API.
