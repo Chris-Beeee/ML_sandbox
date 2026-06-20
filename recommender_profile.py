@@ -565,12 +565,15 @@ class ProfileRecommender:
             import re
             return re.sub(r'[^\w\s]', '', t.lower()).strip()
             
-        normalized_history = {normalize_for_check(t['title']) for t in self.history}
+        combined_list = self.history + getattr(self, 'ignore_list', [])
+        normalized_owned = {normalize_for_check(t['title']) for t in combined_list}
+        owned_ids = {m['id'] for m in combined_list}
         
         recommendations = []
         for idx in similar_indices:
             movie = self.df.iloc[idx]
             movie_title = movie['title']
+            movie_id = movie['id']
             
             # Filter out non-Latin characters (CJK, Cyrillic, Arabic, etc.)
             import re
@@ -585,8 +588,8 @@ class ProfileRecommender:
                 if not has_genres:
                     continue
                 
-            # Robustly exclude movies already in the user's history
-            if normalize_for_check(movie_title) not in normalized_history:
+            # Robustly exclude movies already in the user's profile or ignore list
+            if normalize_for_check(movie_title) not in normalized_owned and movie_id not in owned_ids:
                 recommendations.append({
                     "title": movie_title,
                     "genres": movie['genres'],
