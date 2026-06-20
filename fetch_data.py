@@ -127,7 +127,7 @@ def fetch_movies(limit=1000, force_refresh=False):
     
     return DATASET_FILE
 
-def search_and_append_movie(search_title):
+def search_and_append_movie(search_title, target="history"):
     """
     Searches TMDB for a specific movie title, and if found, appends it to the local CSV.
     Returns the exact matched title, or None if not found.
@@ -182,11 +182,23 @@ def search_and_append_movie(search_title):
             except:
                 pass
                 
+    ignore_ids = set()
+    ignore_file = r'C:\Users\cex\PycharmProjects\ML_TMDB\user_ignore_list.json'
+    if os.path.exists(ignore_file):
+        with open(ignore_file, 'r') as hf:
+            try:
+                ign = json.load(hf)
+                ignore_ids = {m['id'] for m in ign}
+            except:
+                pass
+                
+    all_owned_ids = history_ids.union(ignore_ids)
+                
     # Filter out movies already in profile
-    results = [r for r in results if r['id'] not in history_ids]
+    results = [r for r in results if r['id'] not in all_owned_ids]
     
     if not results:
-        print(f"\nAll matching movies for '{search_title}' are already in your profile!")
+        print(f"\nAll matching movies for '{search_title}' are already in your profile or ignore list!")
         return []
         
     if len(results) == 1:

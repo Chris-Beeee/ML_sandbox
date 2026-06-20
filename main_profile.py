@@ -2,19 +2,21 @@ import sys
 import os
 from recommender_profile import ProfileRecommender
 
-def print_menu(profile_length):
-    print("\n" + "="*50)
-    print(f"USER PROFILE: {profile_length} movies liked.")
-    print("="*50)
+def print_menu(profile_length, ignore_length):
+    print("\n" + "="*60)
+    print(f"USER PROFILE: {profile_length} movies liked | {ignore_length} ignored.")
+    print("="*60)
     print("Commands:")
     print("  [movie name] : Add a movie to your profile (Offline-first)")
-    print("  fetch [name] : Add a movie, but bypass offline and force TMDB Search")
+    print("  fetch [name] : Add a movie, bypass offline and force TMDB Search")
+    print("  ignore [name]: Add a movie to your ignore list")
     print("  recs [num]   : Generate [num] recommendations (default 5)")
-    print("  remove [name]: Remove a movie (or franchise) from your profile")
+    print("  remove [name]: Remove a movie from profile or ignore list")
     print("  profile      : Show all movies currently in your profile")
+    print("  ignored      : Show all movies currently ignored")
     print("  clear        : Wipe your profile and start over")
     print("  quit         : Exit the application")
-    print("="*50)
+    print("="*60)
 
 def main():
     print("Welcome to the TMDB User Profile Recommender!")
@@ -41,7 +43,7 @@ def main():
     
     while True:
         try:
-            print_menu(len(recommender.history))
+            print_menu(len(recommender.history), len(getattr(recommender, 'ignore_list', [])))
             user_input = input("Command > ").strip()
             
             if not user_input:
