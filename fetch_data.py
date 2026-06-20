@@ -182,7 +182,14 @@ def search_and_append_movie(search_title):
             except:
                 pass
                 
-    if len(results) == 1 and results[0]['id'] not in history_ids:
+    # Filter out movies already in profile
+    results = [r for r in results if r['id'] not in history_ids]
+    
+    if not results:
+        print(f"\\nAll matching movies for '{search_title}' are already in your profile!")
+        return []
+        
+    if len(results) == 1:
         best_matches = [results[0]]
         print(f"  (Auto-matched to: {best_matches[0]['title']})")
         

@@ -229,7 +229,12 @@ class ProfileRecommender:
             headers = {"accept": "application/json", "Authorization": f"Bearer {token}"}
             history_ids = {m['id'] for m in self.history}
             
-            if len(partial_match) == 1:
+            # Filter out movies already in profile
+            partial_match = partial_match[~partial_match['id'].isin(history_ids)]
+            
+            if partial_match.empty:
+                print(f"\\nAll matching movies for '{movie_title}' are already in your profile!")
+            elif len(partial_match) == 1:
                 # If there is exactly ONE match in the entire dataset, just auto-select it!
                 m_id = int(partial_match.iloc[0]['id'])
                 if m_id in history_ids:
