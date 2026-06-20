@@ -108,3 +108,7 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 ### 25. Multi-Select Graceful Degradation
 **The Problem:** When using the new multi-select input (e.g., `1, 2, 3, 4`), if any of the selected numbers corresponded to a movie the user already had in their profile, the validation logic would reject the *entire* comma-separated string and throw an "Invalid choice" error, forcing the user to retype the numbers without the invalid index.
 **The Solution:** The multi-select parsing logic was updated to gracefully skip indices that correspond to already-owned movies while continuing to parse and append the valid selections from the rest of the string.
+
+### 26. Pre-Filtering Search Results & Automatic TMDB Fallback
+**The Problem:** Search results (both local and online) displayed movies the user already owned, merely appending `(Already in profile)` next to them. This unnecessarily cluttered the selection menus.
+**The Solution:** The engine now aggressively pre-filters the search datasets before generating the pagination menu, completely removing already-owned movies. As an added benefit, if the user searches the local offline database for a franchise they entirely own (e.g., "Gremlins"), the engine correctly identifies that there are 0 *new* movies available offline and seamlessly triggers an automatic fallback to the live TMDB API to hunt for unowned sequels or adaptations.
