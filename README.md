@@ -116,3 +116,7 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 ### 27. Word Boundary Enforcement for Local Searches
 **The Problem:** The offline dataset search used basic substring matching. If a user searched for "Omen" (expecting "The Omen"), the engine would retrieve every single movie containing the substring "omen", resulting in an entire menu filled with movies featuring the word "Women".
 **The Solution:** The local pandas search query was rewritten to use strict Regex word boundaries (`\b`). The offline search will now only match exact, standalone words, bringing its search intelligence closer to TMDB's native search API.
+
+### 28. Recommendation Blacklist (Ignore List)
+**The Problem:** The user occasionally received recommendations for movies they had seen but disliked or had no intention of ever watching. Leaving them in the recommendations was annoying, but officially adding them to the profile would artificially skew the ML model into thinking the user enjoyed those types of films.
+**The Solution:** A dedicated `ignore [name]` command was added to the main menu. This command leverages the exact same intelligent multi-select and franchise-detection pipeline as the normal add command, but saves the films to a separate `user_ignore_list.json`. The recommendation engine and search pipelines were completely refactored to silently filter out any blacklisted movies before generating recommendations or search results, allowing users to permanently banish films without affecting their profile.
