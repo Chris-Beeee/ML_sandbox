@@ -483,7 +483,7 @@ class ProfileRecommender:
             import re
             return re.sub(r'[^\w\s]', '', t.lower()).strip()
             
-        normalized_history = {normalize_for_check(t) for t in self.history}
+        normalized_history = {normalize_for_check(t['title']) for t in self.history}
         
         recommendations = []
         for idx in similar_indices:
