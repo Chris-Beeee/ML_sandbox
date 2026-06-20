@@ -186,7 +186,7 @@ def search_and_append_movie(search_title):
     results = [r for r in results if r['id'] not in history_ids]
     
     if not results:
-        print(f"\\nAll matching movies for '{search_title}' are already in your profile!")
+        print(f"\nAll matching movies for '{search_title}' are already in your profile!")
         return []
         
     if len(results) == 1:
@@ -203,7 +203,7 @@ def search_and_append_movie(search_title):
             end_idx = start_idx + page_size
             display_results = results[start_idx:end_idx]
             if not display_results:
-                print("\\n--- No more results! Wrapping back to Page 1... ---")
+                print("\n--- No more results! Wrapping back to Page 1... ---")
                 page = 0
                 continue
                 

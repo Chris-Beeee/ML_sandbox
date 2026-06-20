@@ -91,7 +91,7 @@ class ProfileRecommender:
             added_franchise = False
             col_id, col_name = check_movie_collection(movie_id)
             if col_id:
-                print(f"\\n[Franchise Detected] '{matched_title}' belongs to '{col_name}'.")
+                print(f"\n[Franchise Detected] '{matched_title}' belongs to '{col_name}'.")
                 print("Fetching franchise details...")
                 franchise_movies = fetch_collection_movies(col_id)
                 if franchise_movies:
@@ -100,7 +100,7 @@ class ProfileRecommender:
                         fm_year = fm.get('release_date', 'Unknown')[:4] if fm.get('release_date') else 'Unknown'
                         print(f"  - {fm['title']} ({fm_year})")
                         
-                    add_all = input(f"\\nWould you like to add all {len(franchise_movies)} movies to your profile? (y/n): ").strip().lower()
+                    add_all = input(f"\nWould you like to add all {len(franchise_movies)} movies to your profile? (y/n): ").strip().lower()
                     if add_all == 'y':
                         append_multiple_movies(franchise_movies)
                         self.load_data()
@@ -233,7 +233,7 @@ class ProfileRecommender:
             partial_match = partial_match[~partial_match['id'].isin(history_ids)]
             
             if partial_match.empty:
-                print(f"\\nAll matching movies for '{movie_title}' are already in your profile!")
+                print(f"\nAll matching movies for '{movie_title}' are already in your profile!")
             elif len(partial_match) == 1:
                 # If there is exactly ONE match in the entire dataset, just auto-select it!
                 m_id = int(partial_match.iloc[0]['id'])
@@ -263,7 +263,7 @@ class ProfileRecommender:
                     display_results = partial_match.iloc[start_p:end_p]
                 
                     if display_results.empty:
-                        print("\\n--- No more local results! Wrapping back to Page 1... ---")
+                        print("\n--- No more local results! Wrapping back to Page 1... ---")
                         page = 0
                         continue
                     
