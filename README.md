@@ -88,3 +88,6 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 ### 19. Surgical Remove Command with Franchise Purging
 **The Problem:** The only way to remove a bad recommendation was to use the `clear` command to wipe the entire profile.
 **The Solution:** A dedicated `remove [name]` command was implemented. It features a local disambiguation menu if multiple matches are found in the user's profile. Crucially, it mirrors the "add" workflow: if a user elects to remove a movie that belongs to a franchise, the script detects it and prompts the user to purge the *entire* franchise from their history in one keystroke.
+### 20. Profile Inspection Command
+**The Problem:** To check the current state of their history, users previously had to exit the CLI interface and manually inspect `user_history.json` or reboot the application entirely to trigger the startup printout.
+**The Solution:** A `profile` command was added to the main CLI menu. This command instantly prints out the user's entire history array directly within the terminal, fully formatted with release dates, allowing for rapid verification of additions or removals without breaking workflow.
