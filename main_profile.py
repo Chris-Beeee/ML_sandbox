@@ -102,6 +102,21 @@ def main():
                 print(f"Removing '{movie_name}' from profile...")
                 result_msg = recommender.remove_from_profile(movie_name)
                 print(f"-> {result_msg}")
+            elif command == 'ignored':
+                ignore_list = getattr(recommender, 'ignore_list', [])
+                if ignore_list:
+                    print(f"\nCurrent ignore list ({len(ignore_list)} movies):")
+                    for m in ignore_list:
+                        year = m.get('year', 'Unknown')
+                        print(f" - {m['title']} ({year})")
+                else:
+                    print("\nYour ignore list is currently empty.")
+                    
+            elif command.startswith('ignore '):
+                movie_name = user_input[7:].strip()
+                print(f"Adding '{movie_name}' to ignore list...")
+                result_msg = recommender.add_to_profile(movie_name, target="ignore")
+                print(f"-> {result_msg}")
                         
             else:
                 # Treat input as a movie title
