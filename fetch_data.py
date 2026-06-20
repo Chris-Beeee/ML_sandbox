@@ -214,7 +214,8 @@ def search_and_append_movie(search_title):
                     print(title_str)
                     valid_indices.append(i)
                     
-            print("  N. Next Page")
+            if len(results) > page_size:
+                print("  N. Next Page")
             print("  0. None of these / Cancel")
             
             choice = input(f"Which one(s) did you mean? (e.g. 1,3 or N or 0): ").strip().lower()

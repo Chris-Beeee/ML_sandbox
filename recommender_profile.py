@@ -229,13 +229,33 @@ class ProfileRecommender:
             headers = {"accept": "application/json", "Authorization": f"Bearer {token}"}
             history_ids = {m['id'] for m in self.history}
             
-            page = 0
-            page_size = 5
-            
-            while True:
-                start_p = page * page_size
-                end_p = start_p + page_size
-                display_results = partial_match.iloc[start_p:end_p]
+            if len(partial_match) == 1:
+                # If there is exactly ONE match in the entire dataset, just auto-select it!
+                m_id = int(partial_match.iloc[0]['id'])
+                if m_id in history_ids:
+                    return f"'{partial_match.iloc[0]['title']}' is already in your profile."
+                
+                # Fetch year from TMDB quickly so it saves correctly
+                year = "Unknown"
+                if token:
+                    try:
+                        resp = requests.get(f"https://api.themoviedb.org/3/movie/{m_id}", headers=headers, timeout=2)
+                        if resp.status_code == 200:
+                            date = resp.json().get('release_date', '')
+                            if date:
+                                year = date[:4]
+                    except:
+                        pass
+                selected_movies.append((m_id, partial_match.iloc[0]['title'], year))
+                print(f"  (Auto-matched to: {selected_movies[0][1]} ({year}))")
+            else:
+                page = 0
+                page_size = 5
+                
+                while True:
+                    start_p = page * page_size
+                    end_p = start_p + page_size
+                    display_results = partial_match.iloc[start_p:end_p]
                 
                 if display_results.empty:
                     print("\\n--- No more local results! Wrapping back to Page 1... ---")
@@ -266,7 +286,8 @@ class ProfileRecommender:
                         print(title_str)
                         valid_indices.append(i)
                         
-                print("  N. Next Page")
+                if len(partial_match) > page_size:
+                    print("  N. Next Page")
                 print("  0. None of these / Search TMDB instead")
                 
                 choice = input(f"Which one(s) did you mean? (e.g. 1,3 or N or 0): ").strip().lower()

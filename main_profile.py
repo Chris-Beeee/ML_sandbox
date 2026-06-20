@@ -12,7 +12,7 @@ def print_menu(profile_length):
     print("  recs [num]   : Generate [num] recommendations (default 5)")
     print("  remove [name]: Remove a movie (or franchise) from your profile")
     print("  profile      : Show all movies currently in your profile")
-    print("  clear        : Wipe your profile clear and start over")
+    print("  clear        : Wipe your profile clearrecs 20 and start over")
     print("  quit         : Exit the application")
     print("="*50)
 
