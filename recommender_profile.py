@@ -257,78 +257,78 @@ class ProfileRecommender:
                     end_p = start_p + page_size
                     display_results = partial_match.iloc[start_p:end_p]
                 
-                if display_results.empty:
-                    print("\\n--- No more local results! Wrapping back to Page 1... ---")
-                    page = 0
-                    continue
+                    if display_results.empty:
+                        print("\\n--- No more local results! Wrapping back to Page 1... ---")
+                        page = 0
+                        continue
                     
-                print(f"\n[Local Search] Found matches for '{movie_title}' (Page {page+1}/{(len(partial_match) + page_size - 1) // page_size}):")
-                print("  (Hint: To add multiple, enter comma-separated numbers like 1,3,4)")
+                    print(f"\n[Local Search] Found matches for '{movie_title}' (Page {page+1}/{(len(partial_match) + page_size - 1) // page_size}):")
+                    print("  (Hint: To add multiple, enter comma-separated numbers like 1,3,4)")
                 
-                valid_indices = []
-                for i, (_, row) in enumerate(display_results.iterrows(), 1):
-                    m_id = int(row['id'])
-                    year = "Unknown"
-                    if token:
-                        try:
-                            resp = requests.get(f"https://api.themoviedb.org/3/movie/{m_id}", headers=headers, timeout=2)
-                            if resp.status_code == 200:
-                                date = resp.json().get('release_date', '')
-                                if date:
-                                    year = date[:4]
-                        except:
-                            pass
-                            
-                    title_str = f"  {i}. {row['title']} ({year})"
-                    if m_id in history_ids:
-                        print(f"{title_str} (Already in profile)")
-                    else:
-                        print(title_str)
-                        valid_indices.append(i)
-                        
-                if len(partial_match) > page_size:
-                    print("  N. Next Page")
-                print("  0. None of these / Search TMDB instead")
-                
-                choice = input(f"Which one(s) did you mean? (e.g. 1,3 or N or 0): ").strip().lower()
-                
-                if choice == 'n':
-                    page += 1
-                    continue
-                elif choice == '0':
-                    break
-                else:
-                    parts = [p.strip() for p in choice.split(',')]
-                    valid = True
-                    for p in parts:
-                        if not p.isdigit():
-                            valid = False
-                            break
-                        idx = int(p)
-                        if idx not in valid_indices:
-                            valid = False
-                            break
-                        
-                        row = display_results.iloc[idx - 1]
+                    valid_indices = []
+                    for i, (_, row) in enumerate(display_results.iterrows(), 1):
                         m_id = int(row['id'])
-                        
-                        # Fetch year
                         year = "Unknown"
-                        try:
-                            resp = requests.get(f"https://api.themoviedb.org/3/movie/{m_id}", headers=headers, timeout=2)
-                            if resp.status_code == 200:
-                                date = resp.json().get('release_date', '')
-                                if date:
-                                    year = date[:4]
-                        except:
-                            pass
-                        selected_movies.append((m_id, row['title'], year))
+                        if token:
+                            try:
+                                resp = requests.get(f"https://api.themoviedb.org/3/movie/{m_id}", headers=headers, timeout=2)
+                                if resp.status_code == 200:
+                                    date = resp.json().get('release_date', '')
+                                    if date:
+                                        year = date[:4]
+                            except:
+                                pass
+                            
+                        title_str = f"  {i}. {row['title']} ({year})"
+                        if m_id in history_ids:
+                            print(f"{title_str} (Already in profile)")
+                        else:
+                            print(title_str)
+                            valid_indices.append(i)
                         
-                    if valid and selected_movies:
+                    if len(partial_match) > page_size:
+                        print("  N. Next Page")
+                    print("  0. None of these / Search TMDB instead")
+                
+                    choice = input(f"Which one(s) did you mean? (e.g. 1,3 or N or 0): ").strip().lower()
+                
+                    if choice == 'n':
+                        page += 1
+                        continue
+                    elif choice == '0':
                         break
                     else:
-                        print("Invalid choice or movie already in profile. Please try again.")
-                        selected_movies = []
+                        parts = [p.strip() for p in choice.split(',')]
+                        valid = True
+                        for p in parts:
+                            if not p.isdigit():
+                                valid = False
+                                break
+                            idx = int(p)
+                            if idx not in valid_indices:
+                                valid = False
+                                break
+                        
+                            row = display_results.iloc[idx - 1]
+                            m_id = int(row['id'])
+                        
+                            # Fetch year
+                            year = "Unknown"
+                            try:
+                                resp = requests.get(f"https://api.themoviedb.org/3/movie/{m_id}", headers=headers, timeout=2)
+                                if resp.status_code == 200:
+                                    date = resp.json().get('release_date', '')
+                                    if date:
+                                        year = date[:4]
+                            except:
+                                pass
+                            selected_movies.append((m_id, row['title'], year))
+                        
+                        if valid and selected_movies:
+                            break
+                        else:
+                            print("Invalid choice or movie already in profile. Please try again.")
+                            selected_movies = []
                         
         if not selected_movies:
             # Fallback to TMDB
