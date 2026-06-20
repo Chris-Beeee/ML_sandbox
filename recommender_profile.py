@@ -68,6 +68,63 @@ class ProfileRecommender:
         self.history = []
         self.save_history()
 
+    def add_to_profile_online(self, movie_title):
+        \"\"\"Bypasses local CSV search and queries TMDB directly for disambiguation.\"\"\"
+        movie_title = movie_title.lower().strip()
+        
+        from fetch_data import search_and_append_movie, check_movie_collection, fetch_collection_movies, append_multiple_movies
+        fetched_movies = search_and_append_movie(movie_title)
+        
+        if fetched_movies == "CANCELLED":
+            return "Search cancelled by user."
+        elif not fetched_movies:
+            return f"Could not find '{movie_title}' on TMDB."
+            
+        added_total = 0
+        added_names = []
+        
+        for movie_id, matched_title, year in fetched_movies:
+            movie_id = int(movie_id)
+            if any(m['id'] == movie_id for m in self.history):
+                continue
+                
+            added_franchise = False
+            col_id, col_name = check_movie_collection(movie_id)
+            if col_id:
+                print(f"\\n[Franchise Detected] '{matched_title}' belongs to '{col_name}'.")
+                print("Fetching franchise details...")
+                franchise_movies = fetch_collection_movies(col_id)
+                if franchise_movies:
+                    print(f"This collection contains {len(franchise_movies)} movies:")
+                    for fm in franchise_movies:
+                        fm_year = fm.get('release_date', 'Unknown')[:4] if fm.get('release_date') else 'Unknown'
+                        print(f"  - {fm['title']} ({fm_year})")
+                        
+                    add_all = input(f"\\nWould you like to add all {len(franchise_movies)} movies to your profile? (y/n): ").strip().lower()
+                    if add_all == 'y':
+                        append_multiple_movies(franchise_movies)
+                        self.load_data()
+                        for fm in franchise_movies:
+                            if not any(hist_m['id'] == fm['id'] for hist_m in self.history):
+                                self.history.append({"id": int(fm['id']), "title": fm['title'], "year": fm.get('release_date', 'Unknown')[:4]})
+                                added_total += 1
+                        self.save_history()
+                        added_franchise = True
+                        added_names.append(col_name)
+                        
+            if not added_franchise:
+                self.history.append({"id": movie_id, "title": matched_title, "year": year})
+                self.save_history()
+                added_total += 1
+                added_names.append(matched_title)
+                
+        if added_total > 1:
+            return f"Added {added_total} movies to your profile!"
+        elif added_total == 1:
+            return f"Added '{added_names[0]}' to your profile!"
+        else:
+            return "No new movies were added."
+
     def remove_from_profile(self, search_term):
         if not self.history:
             return "Your profile is already empty."
@@ -143,15 +200,12 @@ class ProfileRecommender:
             return f"Removed '{matched_title}' from your profile."
 
     def add_to_profile(self, movie_title):
-        """Finds the movie and adds it to the user history."""
-        # Fix TMDB dictionary collisions (e.g., 'et' means 'and' in French)
-        aliases = {"et": "e.t."}
-        if movie_title.lower().strip() in aliases:
-            movie_title = aliases[movie_title.lower().strip()]
-            
+        """Searches the dataset for a movie and adds it to the user's history."""
+        movie_title = movie_title.lower().strip()
+        
         def normalize_title(t):
             import re
-            t = re.sub(r'[^\w\s]', '', t.lower()).strip()
+            t = re.sub(r'[^\w\s]', '', str(t).lower()).strip()
             if t.startswith("the "): return t[4:]
             if t.startswith("a "): return t[2:]
             if t.startswith("an "): return t[3:]
@@ -165,34 +219,98 @@ class ProfileRecommender:
             partial_match = self.df[self.df['title'].str.contains(movie_title, case=False, na=False, regex=False)]
         else:
             partial_match = pd.DataFrame()
-        
-        matched_title = None
-        movie_id = None
-        year = 'Unknown'
-        
-        # We removed exact-match auto-selection because it aggressively hijacked searches for famous characters
-        # (e.g., searching "Sherlock Holmes" would auto-select the 2009 movie and hide all other adaptations).
+            
+        selected_movies = []
         
         if not partial_match.empty:
-            print(f"\n[Local Search] Found matches for '{movie_title}':")
-            display_results = partial_match.head(6)
-            for i, (_, row) in enumerate(display_results.iterrows(), 1):
-                print(f"  {i}. {row['title']}")
-            print("  0. None of these / Search TMDB instead")
+            import requests
+            from fetch_data import get_access_token
+            token = get_access_token()
+            headers = {"accept": "application/json", "Authorization": f"Bearer {token}"}
+            history_ids = {m['id'] for m in self.history}
+            
+            page = 0
+            page_size = 5
             
             while True:
-                choice = input(f"Which one did you mean? (0-{len(display_results)}): ").strip()
-                if choice.isdigit():
-                    idx = int(choice)
-                    if idx == 0:
-                        break
-                    elif 1 <= idx <= len(display_results):
-                        matched_title = display_results.iloc[idx - 1]['title']
-                        movie_id = int(display_results.iloc[idx - 1]['id'])
-                        break
-                print("Invalid choice, please try again.")
+                start_p = page * page_size
+                end_p = start_p + page_size
+                display_results = partial_match.iloc[start_p:end_p]
                 
-        if not matched_title:
+                if display_results.empty:
+                    print("No more local results.")
+                    page = 0
+                    continue
+                    
+                print(f"\n[Local Search] Found matches for '{movie_title}' (Page {page+1}/{(len(partial_match) + page_size - 1) // page_size}):")
+                print("  (Hint: To add multiple, enter comma-separated numbers like 1,3,4)")
+                
+                valid_indices = []
+                for i, (_, row) in enumerate(display_results.iterrows(), 1):
+                    m_id = int(row['id'])
+                    year = "Unknown"
+                    if token:
+                        try:
+                            resp = requests.get(f"https://api.themoviedb.org/3/movie/{m_id}", headers=headers, timeout=2)
+                            if resp.status_code == 200:
+                                date = resp.json().get('release_date', '')
+                                if date:
+                                    year = date[:4]
+                        except:
+                            pass
+                            
+                    title_str = f"  {i}. {row['title']} ({year})"
+                    if m_id in history_ids:
+                        print(f"{title_str} (Already in profile)")
+                    else:
+                        print(title_str)
+                        valid_indices.append(i)
+                        
+                print("  N. Next Page")
+                print("  0. None of these / Search TMDB instead")
+                
+                choice = input(f"Which one(s) did you mean? (e.g. 1,3 or N or 0): ").strip().lower()
+                
+                if choice == 'n':
+                    page += 1
+                    continue
+                elif choice == '0':
+                    break
+                else:
+                    parts = [p.strip() for p in choice.split(',')]
+                    valid = True
+                    for p in parts:
+                        if not p.isdigit():
+                            valid = False
+                            break
+                        idx = int(p)
+                        if idx not in valid_indices:
+                            valid = False
+                            break
+                        
+                        row = display_results.iloc[idx - 1]
+                        m_id = int(row['id'])
+                        
+                        # Fetch year
+                        year = "Unknown"
+                        try:
+                            resp = requests.get(f"https://api.themoviedb.org/3/movie/{m_id}", headers=headers, timeout=2)
+                            if resp.status_code == 200:
+                                date = resp.json().get('release_date', '')
+                                if date:
+                                    year = date[:4]
+                        except:
+                            pass
+                        selected_movies.append((m_id, row['title'], year))
+                        
+                    if valid and selected_movies:
+                        break
+                    else:
+                        print("Invalid choice or movie already in profile. Please try again.")
+                        selected_movies = []
+                        
+        if not selected_movies:
+            # Fallback to TMDB
             from fetch_data import search_and_append_movie
             fetched = search_and_append_movie(movie_title)
             
@@ -202,47 +320,53 @@ class ProfileRecommender:
                 return f"Movie '{movie_title}' not found on TMDB."
                 
             self.load_data()
-            movie_id, matched_title, year = fetched
-            movie_id = int(movie_id)
+            selected_movies = fetched
             
-        history_ids = [m['id'] for m in self.history]
+        added_total = 0
+        added_names = []
+        from fetch_data import check_movie_collection, fetch_collection_movies, append_multiple_movies
         
-        if movie_id and movie_id not in history_ids:
-            # Check for franchise
-            from fetch_data import check_movie_collection, fetch_collection_movies, append_multiple_movies
-            
+        for movie_id, matched_title, year in selected_movies:
+            movie_id = int(movie_id)
+            if any(m['id'] == movie_id for m in self.history):
+                continue
+                
+            added_franchise = False
             col_id, col_name = check_movie_collection(movie_id)
             if col_id:
                 print(f"\n[Franchise Detected] '{matched_title}' belongs to '{col_name}'.")
                 print("Fetching franchise details...")
                 franchise_movies = fetch_collection_movies(col_id)
-                
                 if franchise_movies:
                     print(f"This collection contains {len(franchise_movies)} movies:")
                     for fm in franchise_movies:
-                        year = fm.get('release_date', 'Unknown')[:4] if fm.get('release_date') else 'Unknown'
-                        print(f"  - {fm['title']} ({year})")
+                        fm_year = fm.get('release_date', 'Unknown')[:4] if fm.get('release_date') else 'Unknown'
+                        print(f"  - {fm['title']} ({fm_year})")
                         
-                    add_franchise = input(f"\nWould you like to add all {len(franchise_movies)} movies to your profile? (y/n): ").strip().lower()
-                    if add_franchise == 'y':
+                    add_all = input(f"\nWould you like to add all {len(franchise_movies)} movies to your profile? (y/n): ").strip().lower()
+                    if add_all == 'y':
                         append_multiple_movies(franchise_movies)
-                        self.load_data() # Reload so the new movies are in the TF-IDF matrix
-                        
-                        added_count = 0
+                        self.load_data()
                         for fm in franchise_movies:
-                            if fm['id'] not in [m['id'] for m in self.history]:
+                            if not any(hist_m['id'] == fm['id'] for hist_m in self.history):
                                 self.history.append({"id": int(fm['id']), "title": fm['title'], "year": fm.get('release_date', 'Unknown')[:4]})
-                                added_count += 1
-                                
+                                added_total += 1
                         self.save_history()
-                        return f"Added '{matched_title}' and {added_count-1} other franchise films to your profile!"
-        
-            # Standard single movie add
-            self.history.append({"id": movie_id, "title": matched_title, "year": year})
-            self.save_history()
-            return f"Added '{matched_title}' to your profile!"
+                        added_franchise = True
+                        added_names.append(col_name)
+                        
+            if not added_franchise:
+                self.history.append({"id": movie_id, "title": matched_title, "year": year})
+                self.save_history()
+                added_total += 1
+                added_names.append(matched_title)
+                
+        if added_total > 1:
+            return f"Added {added_total} movies to your profile!"
+        elif added_total == 1:
+            return f"Added '{added_names[0]}' to your profile!"
         else:
-            return f"'{matched_title}' is already in your profile."
+            return "No new movies were added."
     def add_to_profile_online(self, movie_title):
         """Bypasses local CSV search and queries TMDB directly for disambiguation."""
         movie_title = movie_title.lower().strip()

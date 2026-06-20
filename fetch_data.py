@@ -170,59 +170,116 @@ def search_and_append_movie(search_title):
     # We removed exact-match auto-selection because it aggressively hijacked searches for famous characters
     # (e.g., searching "Sherlock Holmes" would auto-select the 2009 movie and hide all other adaptations).
     
-    if len(results) == 1:
-        best_match = results[0]
-        print(f"  (Auto-matched to: {best_match['title']})")
+    import json
+    import os
+    history_ids = set()
+    history_file = r'C:\Users\cex\PycharmProjects\ML_TMDB\user_history.json'
+    if os.path.exists(history_file):
+        with open(history_file, 'r') as hf:
+            try:
+                hist = json.load(hf)
+                history_ids = {m['id'] for m in hist}
+            except:
+                pass
+                
+    if len(results) == 1 and results[0]['id'] not in history_ids:
+        best_matches = [results[0]]
+        print(f"  (Auto-matched to: {best_matches[0]['title']})")
         
     else:
-        # Disambiguation: present up to 5 choices
-        print(f"\n[Dynamic Fetch] Found matches for '{search_title}':")
-        print("  (Hint: To add an entire franchise, select any movie from it first)")
-        display_results = results[:5]
-        for i, res in enumerate(display_results, 1):
-            year = res.get('release_date', 'Unknown')[:4] if res.get('release_date') else 'Unknown'
-            print(f"  {i}. {res['title']} ({year})")
-        print("  0. None of these / Cancel")
+        page = 0
+        page_size = 5
+        best_matches = []
         
         while True:
-            choice = input(f"Which one did you mean? (0-{len(display_results)}): ").strip()
-            if choice.isdigit():
-                idx = int(choice)
-                if idx == 0:
-                    print("Search cancelled.")
-                    return "CANCELLED"
-                elif 1 <= idx <= len(display_results):
-                    best_match = display_results[idx - 1]
+            start_idx = page * page_size
+            end_idx = start_idx + page_size
+            display_results = results[start_idx:end_idx]
+            
+            if not display_results:
+                print("No more results.")
+                page = 0
+                continue
+                
+            print(f"\n[Dynamic Fetch] Found matches for '{search_title}' (Page {page+1}/{(len(results) + page_size - 1) // page_size}):")
+            print("  (Hint: To add multiple, enter comma-separated numbers like 1,3,4)")
+            
+            valid_indices = []
+            for i, res in enumerate(display_results, 1):
+                global_idx = start_idx + i
+                year = res.get('release_date', 'Unknown')[:4] if res.get('release_date') else 'Unknown'
+                title_str = f"  {i}. {res['title']} ({year})"
+                if res['id'] in history_ids:
+                    print(f"{title_str} (Already in profile)")
+                else:
+                    print(title_str)
+                    valid_indices.append(i)
+                    
+            print("  N. Next Page")
+            print("  0. None of these / Cancel")
+            
+            choice = input(f"Which one(s) did you mean? (e.g. 1,3 or N or 0): ").strip().lower()
+            
+            if choice == 'n':
+                page += 1
+                continue
+            elif choice == '0':
+                print("Search cancelled.")
+                return "CANCELLED"
+            else:
+                # Parse comma separated list
+                parts = [p.strip() for p in choice.split(',')]
+                valid = True
+                selected = []
+                for p in parts:
+                    if not p.isdigit():
+                        valid = False
+                        break
+                    idx = int(p)
+                    if idx not in valid_indices:
+                        valid = False
+                        break
+                    selected.append(display_results[idx - 1])
+                
+                if valid and selected:
+                    best_matches = selected
                     break
-            print("Invalid choice, please try again.")
+                else:
+                    print("Invalid choice or movie already in profile. Please try again.")
+                    
+    ret_list = []
+    
+    # Process all selected movies
+    for best_match in best_matches:
+        matched_title = best_match["title"]
         
-    matched_title = best_match["title"]
-    
-    genre_names = [genre_mapping.get(gid, "Unknown") for gid in best_match.get("genre_ids", [])]
-    keywords = fetch_movie_keywords(best_match["id"], access_token)
-    
-    new_movie = pd.DataFrame([{
-        "id": best_match["id"],
-        "title": matched_title,
-        "overview": best_match.get("overview", ""),
-        "genres": ", ".join(genre_names),
-        "vote_average": best_match.get("vote_average", 0.0),
-        "original_language": best_match.get("original_language", "en"),
-        "keywords": keywords
-    }])
-    
-    # Append to existing CSV
-    if os.path.exists(DATASET_FILE):
-        existing_df = pd.read_csv(DATASET_FILE)
-        # Check if we accidentally already have it (maybe under a slightly different name)
-        if best_match["id"] not in existing_df["id"].values:
-            new_movie.to_csv(DATASET_FILE, mode='a', header=False, index=False)
-            print(f"[Dynamic Fetch] Added '{matched_title}' to local dataset!")
+        genre_names = [genre_mapping.get(gid, "Unknown") for gid in best_match.get("genre_ids", [])]
+        keywords = fetch_movie_keywords(best_match["id"], access_token)
+        
+        new_movie = pd.DataFrame([{
+            "id": best_match["id"],
+            "title": matched_title,
+            "overview": best_match.get("overview", ""),
+            "genres": ", ".join(genre_names),
+            "vote_average": best_match.get("vote_average", 0.0),
+            "original_language": best_match.get("original_language", "en"),
+            "keywords": keywords
+        }])
+        
+        # Append to existing CSV
+        if os.path.exists(DATASET_FILE):
+            existing_df = pd.read_csv(DATASET_FILE)
+            if best_match["id"] not in existing_df["id"].values:
+                new_movie.to_csv(DATASET_FILE, mode='a', header=False, index=False)
+                print(f"[Dynamic Fetch] Added '{matched_title}' to local dataset!")
+            else:
+                print(f"[Dynamic Fetch] '{matched_title}' is already in the dataset under its ID.")
         else:
-            print(f"[Dynamic Fetch] '{matched_title}' is already in the dataset under its ID.")
-    else:
-        new_movie.to_csv(DATASET_FILE, index=False)
-    return best_match["id"], matched_title, best_match.get("release_date", "Unknown")[:4]
+            new_movie.to_csv(DATASET_FILE, index=False)
+            
+        ret_list.append((best_match["id"], matched_title, best_match.get("release_date", "Unknown")[:4]))
+        
+    return ret_list
 
 def check_movie_collection(movie_id):
     """Checks if a movie belongs to a collection and returns (collection_id, collection_name)."""
