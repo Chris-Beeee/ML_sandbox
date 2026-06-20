@@ -305,9 +305,11 @@ class ProfileRecommender:
                                 valid = False
                                 break
                             idx = int(p)
-                            if idx not in valid_indices:
+                            if not (1 <= idx <= len(display_results)):
                                 valid = False
                                 break
+                            if idx not in valid_indices:
+                                continue # Skip already owned
                         
                             row = display_results.iloc[idx - 1]
                             m_id = int(row['id'])

@@ -236,9 +236,11 @@ def search_and_append_movie(search_title):
                         valid = False
                         break
                     idx = int(p)
-                    if idx not in valid_indices:
+                    if not (1 <= idx <= len(display_results)):
                         valid = False
                         break
+                    if idx not in valid_indices:
+                        continue # Skip already owned
                     selected.append(display_results[idx - 1])
                 
                 if valid and selected:
