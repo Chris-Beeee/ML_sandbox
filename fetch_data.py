@@ -167,13 +167,10 @@ def search_and_append_movie(search_title):
     normalized_search = normalize_title(search_title)
     exact_matches = [res for res in results if normalize_title(res['title']) == normalized_search]
     
-    # Prevent obscure exact-match trap: Only auto-select if the exact match is the #1 most popular result.
-    # ALSO prevent Remake Trap: If there are MULTIPLE exact matches (like Dune 1984 and 2021), force disambiguation!
-    if len(exact_matches) == 1 and exact_matches[0]['id'] == results[0]['id']:
-        best_match = exact_matches[0]
-        print(f"  (Auto-matched to exact title: {best_match['title']})")
-            
-    elif len(results) == 1:
+    # We removed exact-match auto-selection because it aggressively hijacked searches for famous characters
+    # (e.g., searching "Sherlock Holmes" would auto-select the 2009 movie and hide all other adaptations).
+    
+    if len(results) == 1:
         best_match = results[0]
         print(f"  (Auto-matched to: {best_match['title']})")
         

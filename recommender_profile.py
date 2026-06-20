@@ -170,19 +170,10 @@ class ProfileRecommender:
         movie_id = None
         year = 'Unknown'
         
-        if not exact_match.empty and len(exact_match) == 1:
-            matched_title = exact_match.iloc[0]['title']
-            movie_id = int(exact_match.iloc[0]['id'])
-            
-            others = partial_match[partial_match['title'] != matched_title].head(3)
-            if not others.empty:
-                other_names = ", ".join(others['title'].tolist())
-                print(f"  (FYI: I also found related movies you can type: {other_names})")
-        elif len(exact_match) > 1:
-            print(f"  (Multiple local matches for '{movie_title}'. Fetching from TMDB to show release years...)")
-            partial_match = pd.DataFrame()
-                
-        elif not partial_match.empty:
+        # We removed exact-match auto-selection because it aggressively hijacked searches for famous characters
+        # (e.g., searching "Sherlock Holmes" would auto-select the 2009 movie and hide all other adaptations).
+        
+        if not partial_match.empty:
             print(f"\n[Local Search] Found matches for '{movie_title}':")
             display_results = partial_match.head(6)
             for i, (_, row) in enumerate(display_results.iterrows(), 1):
