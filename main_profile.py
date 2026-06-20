@@ -10,7 +10,7 @@ def print_menu(profile_length):
     print("  [movie name] : Add a movie to your profile (Offline-first)")
     print("  fetch [name] : Add a movie, but bypass offline and force TMDB Search")
     print("  recs [num]   : Generate [num] recommendations (default 5)")
-    print("  clear        : Wipe your profile clearclear and start over")
+    print("  clear        : Wipe your profile clear and start over")
     print("  quit         : Exit the application")
     print("="*50)
 
