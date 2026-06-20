@@ -87,9 +87,15 @@ def main():
                 if isinstance(results, str):
                     print(f"\n-> {results}")
                 else:
-                    print(f"\nBased on your unique profile, here are {top_n} matches:")
-                    for i, rec in enumerate(results, 1):
-                        print(f"  {i}. {rec['title']} (Final: {rec['final_score']} | Sim: {rec['similarity_score']} | Rating: {rec['vote_average']}/10) - {rec['genres']}")
+                    if not results:
+                        if filter_genres:
+                            print(f"\nNo recommendations found matching the genre filters: {', '.join(filter_genres)}")
+                        else:
+                            print("\nNo recommendations found.")
+                    else:
+                        print(f"\nBased on your unique profile, here are {len(results)} matches:")
+                        for i, rec in enumerate(results, 1):
+                            print(f"  {i}. {rec['title']} (Final: {rec['final_score']} | Sim: {rec['similarity_score']} | Rating: {rec['vote_average']}/10) - {rec['genres']}")
                         
             elif command.startswith('fetch '):
                 movie_name = user_input[6:].strip()
