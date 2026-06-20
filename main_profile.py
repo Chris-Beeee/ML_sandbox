@@ -10,6 +10,7 @@ def print_menu(profile_length):
     print("  [movie name] : Add a movie to your profile (Offline-first)")
     print("  fetch [name] : Add a movie, but bypass offline and force TMDB Search")
     print("  recs [num]   : Generate [num] recommendations (default 5)")
+    print("  remove [name]: Remove a movie (or franchise) from your profile")
     print("  clear        : Wipe your profile clear and start over")
     print("  quit         : Exit the application")
     print("="*50)
@@ -82,6 +83,12 @@ def main():
                 movie_name = user_input[6:].strip()
                 print(f"Fetching '{movie_name}' from TMDB...")
                 result_msg = recommender.add_to_profile_online(movie_name)
+                print(f"-> {result_msg}")
+                
+            elif command.startswith('remove '):
+                movie_name = user_input[7:].strip()
+                print(f"Removing '{movie_name}' from profile...")
+                result_msg = recommender.remove_from_profile(movie_name)
                 print(f"-> {result_msg}")
                         
             else:

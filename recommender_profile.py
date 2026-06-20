@@ -68,6 +68,79 @@ class ProfileRecommender:
         self.history = []
         self.save_history()
 
+    def remove_from_profile(self, search_term):
+        if not self.history:
+            return "Your profile is already empty."
+            
+        search_term = search_term.lower().strip()
+        
+        # Find matches in history
+        matches = [m for m in self.history if search_term in m['title'].lower()]
+        
+        if not matches:
+            return f"No movies matching '{search_term}' found in your profile."
+            
+        target_movie = None
+        if len(matches) == 1:
+            target_movie = matches[0]
+        else:
+            print(f"\nFound multiple matches for '{search_term}' in your profile:")
+            for i, m in enumerate(matches, 1):
+                year = m.get('year', 'Unknown')
+                print(f"  {i}. {m['title']} ({year})")
+            print("  0. Cancel")
+            
+            while True:
+                choice = input(f"Which one do you want to remove? (0-{len(matches)}): ").strip()
+                if choice.isdigit():
+                    idx = int(choice)
+                    if idx == 0:
+                        return "Removal cancelled."
+                    elif 1 <= idx <= len(matches):
+                        target_movie = matches[idx - 1]
+                        break
+                print("Invalid choice, please try again.")
+                
+        movie_id = target_movie['id']
+        matched_title = target_movie['title']
+        
+        # Check if it belongs to a franchise
+        from fetch_data import check_movie_collection, fetch_collection_movies
+        col_id, col_name = check_movie_collection(movie_id)
+        
+        to_remove_ids = [movie_id]
+        
+        if col_id:
+            # Get all movies in that collection
+            franchise_movies = fetch_collection_movies(col_id)
+            if franchise_movies:
+                franchise_ids = {fm['id'] for fm in franchise_movies}
+                
+                # Check how many from this franchise are actually IN the profile
+                profile_franchise_movies = [m for m in self.history if m['id'] in franchise_ids]
+                
+                if len(profile_franchise_movies) > 1:
+                    print(f"\n[Franchise Detected] '{matched_title}' belongs to '{col_name}'.")
+                    print(f"You have {len(profile_franchise_movies)} movies from this franchise in your profile:")
+                    for m in profile_franchise_movies:
+                        year = m.get('year', 'Unknown')
+                        print(f"  - {m['title']} ({year})")
+                        
+                    remove_all = input("\nWould you like to remove ALL of these franchise movies from your profile? (y/n): ").strip().lower()
+                    if remove_all == 'y':
+                        to_remove_ids = [m['id'] for m in profile_franchise_movies]
+                        
+        # Perform removal
+        initial_count = len(self.history)
+        self.history = [m for m in self.history if m['id'] not in to_remove_ids]
+        self.save_history()
+        
+        removed_count = initial_count - len(self.history)
+        if removed_count > 1:
+            return f"Removed '{matched_title}' and {removed_count - 1} other franchise movies."
+        else:
+            return f"Removed '{matched_title}' from your profile."
+
     def add_to_profile(self, movie_title):
         """Finds the movie and adds it to the user history."""
         # Fix TMDB dictionary collisions (e.g., 'et' means 'and' in French)
