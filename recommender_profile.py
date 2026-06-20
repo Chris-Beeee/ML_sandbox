@@ -216,7 +216,9 @@ class ProfileRecommender:
         exact_match = self.df[self.df['title'].apply(normalize_title) == normalized_search]
         
         if len(movie_title) > 2:
-            partial_match = self.df[self.df['title'].str.contains(movie_title, case=False, na=False, regex=False)]
+            import re
+            pattern = r'\b' + re.escape(movie_title) + r'\b'
+            partial_match = self.df[self.df['title'].str.contains(pattern, case=False, na=False, regex=True)]
         else:
             partial_match = pd.DataFrame()
             
