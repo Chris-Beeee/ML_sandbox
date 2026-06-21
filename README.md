@@ -1,6 +1,10 @@
 # Hybrid Machine Learning Movie Recommender
 
-This project is a hybrid offline/online Machine Learning recommendation engine that analyzes your movie history and predicts what you will want to watch next using TF-IDF Vectorization and Cosine Similarity. It prioritizes local dataset searches for speed and privacy, while seamlessly falling back to the live TMDB API to fetch obscure titles and expansive franchises when needed.
+This project is a hybrid offline/online Machine Learning recommendation engine that analyzes your movie history and predicts what you will want to watch next using TF-IDF Vectorization and Cosine Similarity. It prioritizes local dataset searches for speed and privacy, while seamlessly falling back to the live TMDB API to fetch obscure titles and expansive franchises when needed.This is a personal project to apply my QA training to machine learning. Below you can see some examples of the more significant problems I encountered during the project so far. The data set is a challenging one because of the tendency to remake films with the exact same title, of which some are related and some are not ('Sherlock Holmes' is probably the most persistent example of this that I found)
+
+In terms of testing strategy I chose movies because I have excellent domain knowledge in this area, so I knew what films I would expect to see recommended based on my inputs, and that knowledge enabled me to quickly iterate through testing and raise issues based on personal knowledge to get a proof of concept running based on my domain knowledge and QA experience to identify edge cases. 
+
+I think my next task will be to reverse engineer the tests to see how I can generate a testing plan that would work for someone who is not a big movie fan, and has no idea if the recommendations being returned are optimal or not. 
 
 ## Core Scripts
 
