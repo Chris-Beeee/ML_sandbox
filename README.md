@@ -124,3 +124,20 @@ The ML engine recently underwent a massive overhaul to solve several inherent fl
 ### 28. Recommendation Blacklist (Ignore List)
 **The Problem:** The user occasionally received recommendations for movies they had seen but disliked or had no intention of ever watching. Leaving them in the recommendations was annoying, but officially adding them to the profile would artificially skew the ML model into thinking the user enjoyed those types of films.
 **The Solution:** A dedicated `ignore [name]` command was added to the main menu. This command leverages the exact same intelligent multi-select and franchise-detection pipeline as the normal add command, but saves the films to a separate `user_ignore_list.json`. The recommendation engine and search pipelines were completely refactored to silently filter out any blacklisted movies before generating recommendations or search results, allowing users to permanently banish films without affecting their profile.
+
+## Automated Testing
+This project uses `pytest` for automated testing. The test suite guarantees that core data filtering, API fallback mechanisms, and profile updates work correctly without regressions.
+
+### Running the tests
+1. Install development dependencies:
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+2. Execute the test suite:
+   ```bash
+   python -m pytest tests/
+   ```
+
+### Test Architecture
+- **Safety**: The tests use temporary directories and mocked files (`pytest`'s `tmp_path`), meaning they will **never** overwrite or corrupt your actual `user_history.json` or `user_ignore_list.json`.
+- **Speed & Rate-Limits**: The `test_fetch.py` suite utilizes `pytest-mock` to intercept and mock the live TMDB HTTP requests, ensuring tests execute instantly without an internet connection or exhausting API rate limits.

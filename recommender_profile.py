@@ -8,9 +8,10 @@ import json
 from fetch_data import search_and_append_movie
 
 class ProfileRecommender:
-    def __init__(self, dataset_path="movies_dataset.csv", history_file="user_history.json"):
+    def __init__(self, dataset_path="movies_dataset.csv", history_file="user_history.json", ignore_file="user_ignore_list.json"):
         self.dataset_path = dataset_path
         self.history_file = history_file
+        self.ignore_file = ignore_file
         self.df = None
         self.vectorizer = None
         self.tfidf_matrix = None
@@ -64,14 +65,14 @@ class ProfileRecommender:
 
     def load_ignore_list(self):
         import os, json
-        if os.path.exists('user_ignore_list.json'):
-            with open('user_ignore_list.json', 'r', encoding='utf-8') as f:
+        if os.path.exists(self.ignore_file):
+            with open(self.ignore_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         return []
         
     def save_ignore_list(self):
         import json
-        with open('user_ignore_list.json', 'w', encoding='utf-8') as f:
+        with open(self.ignore_file, 'w', encoding='utf-8') as f:
             json.dump(self.ignore_list, f, indent=4)
 
     def save_history(self):
