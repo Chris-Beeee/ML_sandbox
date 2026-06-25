@@ -13,7 +13,25 @@ This is a hybrid (offline-first + TMDB API fallback) recommendation engine built
 
 ## System Architecture
 
-### 1. Profile-Based Recommendations
+### 1. High-Level System Overview
+This diagram illustrates the dual-mode nature of the application and how it balances speed (offline dataset) with completeness (live TMDB API fallback).
+
+```mermaid
+graph TD
+    A([User Input / Feedback]) --> B{Operation Mode}
+    B -->|Profile Mode| C[TF-IDF Profile Engine]
+    B -->|Tinder Mode| D[Logistic Regression Engine]
+    
+    C --> E{Local Dataset}
+    D --> E
+    
+    E -->|Match Found| F([Generate Recommendations])
+    E -->|Missing / Extrapolating| G[Live TMDB API Fallback]
+    G --> F
+```
+*Caption: The overarching architecture showing the offline-first approach with graceful degradation to the TMDB API.*
+
+### 2. Profile-Based Recommendations
 The profile engine uses a standard Content-Based filtering approach, relying on TF-IDF (Term Frequency-Inverse Document Frequency) to map out the textual similarity between movies based on their genres, keywords, and plot overviews.
 
 ```mermaid
@@ -31,10 +49,14 @@ graph TD
         F --> H
     end
 
-    H --> I([Top Recommendations])
+    H --> I{Sufficient Local Data?}
+    I -->|Yes| J([Top Recommendations])
+    I -->|No / Expanding| K[TMDB API Fallback Fetch]
+    K --> J
 ```
+*Caption: The mathematical flow of generating profile recommendations, including the TMDB fallback when local data is sparse.*
 
-### 2. Active Learning ('Tinder Mode')
+### 3. Active Learning ('Tinder Mode')
 The active learning engine builds a personalized Logistic Regression classifier in real-time. It balances *exploitation* (showing you movies it knows you'll like) with *exploration* (showing you wildcards to discover new niches).
 
 ```mermaid
@@ -56,6 +78,7 @@ graph TD
     D --> J
     J --> A
 ```
+*Caption: The reinforcement loop that continuously retrains the Logistic Regression model, balancing safe bets with exploratory wildcards.*
 
 ### Key Features
 - Offline dataset (4,000+ movies) for speed and privacy, with seamless live API fallback
