@@ -57,8 +57,7 @@ test_active_learning.py — Epsilon-Greedy and user profile behaviour
 All tests run fully offline using the included movies_dataset.csv.
 
 
-QA Challenges & Solutions Applied
-I used this project to deliberately apply structured QA thinking to ML development. Key issues identified and resolved:Data Quality & IngestionIngestion Firewall — Dropped invalid entries (blank overviews, non-Latin titles) early.
+###QA Challenges & Solutions AppliedI used this project to deliberately apply structured QA thinking to ML development. Key issues identified and resolved:Data Quality & IngestionIngestion Firewall — Dropped invalid entries (blank overviews, non-Latin titles) early.
 Dynamic CSV Alignment — Fixed column shifting when extending the dataset.
 Release Year Backfill & Disambiguation — Better handling of remakes with identical titles.
 Expanded dataset from 1k to 4k+ movies while maintaining quality.
