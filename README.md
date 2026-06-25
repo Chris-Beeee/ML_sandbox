@@ -54,12 +54,17 @@ Key Test Suites:test_data_validation.py — Data quality & ingestion checks
 test_recommendation.py — Core similarity logic, edge cases & bias checks
 test_active_learning.py — Epsilon-Greedy and user profile behaviour
 
-All tests run fully offline using the included movies_dataset.csv.QA Challenges & Solutions AppliedI used this project to deliberately apply structured QA thinking to ML development. Key issues identified and resolved:Data Quality & IngestionIngestion Firewall — Dropped invalid entries (blank overviews, non-Latin titles) early.
+All tests run fully offline using the included movies_dataset.csv.
+
+
+###QA Challenges & Solutions Applied
+I used this project to deliberately apply structured QA thinking to ML development. Key issues identified and resolved:Data Quality & IngestionIngestion Firewall — Dropped invalid entries (blank overviews, non-Latin titles) early.
 Dynamic CSV Alignment — Fixed column shifting when extending the dataset.
 Release Year Backfill & Disambiguation — Better handling of remakes with identical titles.
 Expanded dataset from 1k to 4k+ movies while maintaining quality.
 
-Recommendation LogicSwitched to Max Pooling + Genre Boosting to prevent popular franchises from diluting rare keywords.
+Recommendation Logic
+Switched to Max Pooling + Genre Boosting to prevent popular franchises from diluting rare keywords.
 Added Review Score Multiplier and Foreign Film Handicap to reduce bias.
 Integrated TMDB community keywords to bridge vocabulary mismatch.
 Introduced controlled randomness ("Discovery Temperature") for varied recommendations.
@@ -73,4 +78,3 @@ Added parameterised + randomised Pytest suites for validation.
 Next step: Design a testing strategy usable by non-domain experts.
 
 Status: Experimental / Rapid prototype (started ~1 week ago). The focus has been on applying QA rigour rather than building a polished consumer product.Feel free to explore the code and tests. Feedback welcome!
-
