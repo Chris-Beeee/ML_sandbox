@@ -11,6 +11,52 @@ This is a hybrid (offline-first + TMDB API fallback) recommendation engine built
 
 **Tech Stack:** Python, scikit-learn, pandas, TMDB API, Pytest
 
+## System Architecture
+
+### 1. Profile-Based Recommendations
+The profile engine uses a standard Content-Based filtering approach, relying on TF-IDF (Term Frequency-Inverse Document Frequency) to map out the textual similarity between movies based on their genres, keywords, and plot overviews.
+
+```mermaid
+graph TD
+    subgraph Data Pipeline
+        A[(movies_dataset.csv)] --> B[Text Preprocessing]
+        B --> C[TF-IDF Vectorization]
+    end
+
+    subgraph Profile Engine
+        D[User History] --> E[Profile Vector Aggregation]
+        C --> E
+        E --> F[Cosine Similarity Matrix]
+        G[User Ignore List] --> H[Filter Results]
+        F --> H
+    end
+
+    H --> I([Top Recommendations])
+```
+
+### 2. Active Learning ('Tinder Mode')
+The active learning engine builds a personalized Logistic Regression classifier in real-time. It balances *exploitation* (showing you movies it knows you'll like) with *exploration* (showing you wildcards to discover new niches).
+
+```mermaid
+graph TD
+    A([User Feedback]) -->|Yes / No| B[(user_feedback.csv)]
+    B --> C{Feedback Count}
+    C -->|< 2 Classes| D[Cold Start: Random/Seed Movie]
+    C -->|>= 2 Classes| E[Train Logistic Regression]
+
+    subgraph Active Learning Loop
+        E --> F[Predict Probabilities]
+        F --> G{Epsilon-Greedy Selector}
+        G -->|80% Exploit| H[Highest Probability Match]
+        G -->|20% Explore| I[Decision Boundary Wildcard]
+    end
+
+    H --> J([Next Movie Prompt])
+    I --> J
+    D --> J
+    J --> A
+```
+
 ### Key Features
 - Offline dataset (4,000+ movies) for speed and privacy, with seamless live API fallback
 - Max Pooling + Genre Boosting + Review Score weighting
