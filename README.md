@@ -35,21 +35,29 @@ This is a hybrid (offline-first + TMDB API fallback) recommendation engine built
 ### Running the Tests
 
 ```bash
-# 1. Install dependencies (if not already done)
+# Install dependencies (if not already done)
 pip install -r requirements.txt
 
-# 2. Run all tests
+# Run all tests
 pytest
 
-# Run with verbose output and coverage
+# Run with verbose output + coverage
 pytest -v --cov=.
 
-# Run only specific test files
-pytest tests/test_recommendation.py -v
+# Run specific test files
 pytest tests/test_data_validation.py -v
+pytest tests/test_recommendation.py -v
+pytest tests/test_active_learning.py -v
 
-# Run with randomised parameterised tests (shows more edge cases)
+# Run with random ordering (great for spotting flaky edge cases)
 pytest --randomly-seed=42
+
+Key Test Suites:test_data_validation.py — Data quality & ingestion checks
+test_recommendation.py — Core similarity logic, edge cases & bias checks
+test_active_learning.py — Epsilon-Greedy and user profile behaviour
+
+All tests run fully offline using the included movies_dataset.csv.
+
 
 ### QA Challenges & Solutions Applied
 
