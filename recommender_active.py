@@ -170,3 +170,25 @@ class ActiveRecommender:
             "is_ml": True,
             "is_exploration": is_exploration
         }
+
+    def search_movies(self, query):
+        """Searches for movies by title using word boundaries."""
+        import re
+        if not query.strip():
+            return []
+            
+        # Escape regex characters
+        query_escaped = re.escape(query.strip())
+        pattern = r'\b' + query_escaped + r'\b'
+        
+        matches = self.df[self.df['title'].str.contains(pattern, case=False, na=False, regex=True)]
+        
+        results = []
+        for _, row in matches.iterrows():
+            results.append({
+                "id": row['id'],
+                "title": row['title'],
+                "year": row.get('release_date', 'Unknown')[:4] if pd.notna(row.get('release_date')) else 'Unknown'
+            })
+            
+        return results
