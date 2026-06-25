@@ -32,6 +32,24 @@ This is a hybrid (offline-first + TMDB API fallback) recommendation engine built
 **Note**: A pre-built `movies_dataset.csv` is included so you can try it immediately without an API key.
 
 ---
+### Running the Tests
+
+```bash
+# 1. Install dependencies (if not already done)
+pip install -r requirements.txt
+
+# 2. Run all tests
+pytest
+
+# Run with verbose output and coverage
+pytest -v --cov=.
+
+# Run only specific test files
+pytest tests/test_recommendation.py -v
+pytest tests/test_data_validation.py -v
+
+# Run with randomised parameterised tests (shows more edge cases)
+pytest --randomly-seed=42
 
 ### QA Challenges & Solutions Applied
 
