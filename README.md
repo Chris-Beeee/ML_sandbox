@@ -35,30 +35,26 @@ This is a hybrid (offline-first + TMDB API fallback) recommendation engine built
 
 ### QA Challenges & Solutions Applied
 
-This project was deliberately used as a vehicle to apply structured QA thinking to ML development. Below are the major issues I identified and resolved during rapid iteration:
+I used this project to deliberately apply structured QA thinking to ML development. Key issues identified and resolved:
 
 #### Data Quality & Ingestion
-- **Ingestion Firewall** — Dropped invalid entries (blank overviews, non-Latin titles) before they entered the dataset.
-- **Dynamic CSV Alignment** — Fixed column shifting when appending new fields (e.g., keywords).
-- **Database Expansion** — Increased from 1k to 4k+ movies to retain older classics.
-- **Release Year Backfill & Disambiguation** — Improved handling of remakes with identical titles.
+- **Ingestion Firewall** — Dropped invalid entries (blank overviews, non-Latin titles) early.
+- **Dynamic CSV Alignment** — Fixed column shifting when extending the dataset.
+- **Release Year Backfill & Disambiguation** — Better handling of remakes with identical titles.
+- Expanded dataset from 1k to 4k+ movies while maintaining quality.
 
-#### Recommendation Logic & Mathematical Issues
-- **Max Pooling vs Average Pooling** — Prevented dilution of rare keywords when adding large franchises (e.g., James Bond).
-- **Genre Weighting Boost** — Duplicated genre tags to stop them being overpowered by plot text.
-- **Review Score Multiplier** — Penalised poorly rated films even if text similarity was high.
-- **Foreign Film Handicap** — Applied language-based penalty to reduce irrelevant global-popularity bias.
-- **TMDB Community Keywords Integration** — Bridged vocabulary mismatch (e.g., "dark detective" vs "superhero").
-- **Discovery Temperature** — Added controlled randomness to avoid identical recommendations every time.
+#### Recommendation Logic
+- Switched to **Max Pooling** + **Genre Boosting** to prevent popular franchises from diluting rare keywords.
+- Added **Review Score Multiplier** and **Foreign Film Handicap** to reduce bias.
+- Integrated TMDB community keywords to bridge vocabulary mismatch.
+- Introduced controlled randomness ("Discovery Temperature") for varied recommendations.
 
-#### User Experience & Active Learning
-- **Franchise Discovery Previews** — Show full list + years before bulk-adding.
-- **Epsilon-Greedy Exploration** — Prevented echo chambers by forcing occasional wildcards (20% exploration rate).
-- **Execution vs Taste Split** — Added option to separate "bad execution" from "dislike genre".
-- **Hard Reset** — Full model wipe for fresh cold-start sessions.
-- **Online Search Override** — `fetch [title]` command to bypass local matches for remakes.
+#### Active Learning & UX
+- **Epsilon-Greedy Exploration** (20% rate) to prevent echo chambers.
+- **Franchise Previews** and **Execution vs Taste** split for better user control.
+- **Online Search Override** for remakes and **Hard Reset** for cold starts.
 
-(Additional detailed entries and regression fixes are in the commit history.)
+Additional regression fixes and details are in the commit history.
 
 ### Testing Approach
 - Chose movies because of strong domain knowledge → rapid oracle-based testing.
