@@ -1,143 +1,71 @@
-# Hybrid Machine Learning Movie Recommender
+# Hybrid Machine Learning Movie Recommender (CLI Experiment)
 
-This project is a hybrid offline/online Machine Learning recommendation engine that analyzes your movie history and predicts what you will want to watch next using TF-IDF Vectorization and Cosine Similarity. It prioritizes local dataset searches for speed and privacy, while seamlessly falling back to the live TMDB API to fetch obscure titles and expansive franchises when needed.This is a personal project to apply my QA training to machine learning. Below you can see some examples of the more significant problems I encountered during the project so far. The data set is a challenging one because of the tendency to remake films with the exact same title, of which some are related and some are not ('Sherlock Holmes' is probably the most persistent example of this that I found)
+**A personal experiment applying Software QA practices to Machine Learning.**
 
-In terms of testing strategy I chose movies because I have excellent domain knowledge in this area, so I knew what films I would expect to see recommended based on my inputs, and that knowledge enabled me to quickly iterate through testing and raise issues based on personal knowledge to get a proof of concept running based on my domain knowledge and QA experience to identify edge cases. 
+This is a hybrid (offline-first + TMDB API fallback) recommendation engine built with TF-IDF Vectorization and Cosine Similarity. It includes two modes:
 
-I think my next task will be to reverse engineer the tests to see how I can generate a testing plan that would work for someone who is not a big movie fan, and has no idea if the recommendations being returned are optimal or not. 
+- **Profile-based recommendations** — Build a persistent user profile and get weighted suggestions.
+- **'Tinder for movies' (Active Learning)** — Interactive session with Epsilon-Greedy exploration to avoid echo chambers.
 
-## Core Scripts
+**Goal of the project**: Test how QA techniques (edge-case hunting, data validation, risk identification, iterative refinement, bias mitigation, and regression testing) apply when building and evolving an ML system from scratch.
 
-- `fetch_data.py`: Connects to the live TMDB API to download a snapshot of the global Top 4,000 most popular and top-rated movies into a local offline matrix (`movies_dataset.csv`).
-- `main_profile.py`: The interactive CLI that allows you to add movies to your profile, auto-detect franchises, and generate weighted recommendations.
-- `recommender_profile.py`: The brain of the operation. Handles the natural language processing, TF-IDF vector math, and pooling logic to rank your recommendations.
+**Tech Stack**: Python, scikit-learn, pandas, TMDB API, Pytest
+
+### Key Features
+- Offline dataset (4,000+ movies) for speed and privacy, with seamless live API fallback
+- Max Pooling + Genre Boosting + Review Score weighting
+- Franchise auto-detection with preview
+- Epsilon-Greedy active learning (exploration vs exploitation)
+- Robust handling of real-world data messiness (remakes, foreign films, vocabulary mismatch, missing data)
+- Parameterised and randomised Pytest suites for validation
+
+### Quick Start
+
+1. Clone the repo
+2. `pip install -r requirements.txt`
+3. Copy `.env.example` to `.env` and add your TMDB API key (optional — works with offline data only)
+4. Run one of the mains:
+   - `python main_profile.py` → Profile mode
+   - `python main_active.py` → Active learning / Tinder-style mode
+
+**Note**: A pre-built `movies_dataset.csv` is included so you can try it immediately without an API key.
 
 ---
 
-## Recent Architectural Upgrades
+### QA Challenges & Solutions Applied
 
-The ML engine recently underwent a massive overhaul to solve several inherent flaws in mathematical text analysis and global API queries.
+This project was deliberately used as a vehicle to apply structured QA thinking to ML development. Below are the major issues I identified and resolved during rapid iteration:
 
-### 1. Max Pooling vs. Average Pooling
-**The Problem:** When adding an massive 26-movie franchise (like James Bond) to a user's profile, calculating the profile using an "Average Pooling" vector diluted highly specific, rare plot keywords (like "MI6" or "espionage") because they were averaged out across 26 massive overviews.
-**The Solution:** Switched the mathematical algorithm to **Max Pooling** (`liked_vectors.max(axis=0)`). The engine now preserves the *maximum strength* of every unique keyword it finds across your history. This ensures highly specific plot points are permanently locked into your profile at full strength.
+#### Data Quality & Ingestion
+- **Ingestion Firewall** — Dropped invalid entries (blank overviews, non-Latin titles) before they entered the dataset.
+- **Dynamic CSV Alignment** — Fixed column shifting when appending new fields (e.g., keywords).
+- **Database Expansion** — Increased from 1k to 4k+ movies to retain older classics.
+- **Release Year Backfill & Disambiguation** — Improved handling of remakes with identical titles.
 
-### 2. Genre Weighting Boost
-**The Problem:** Because an overview paragraph has 100+ words, while a genre string only has 3 words (`Action, Adventure, Thriller`), the mathematical frequency of the genre tags was completely overpowered by random generic words in the overview text (like "man", "world", "save").
-**The Solution:** The engine now artificially duplicates genre tags (repeating them 2x) before creating the TF-IDF matrix. This physically forces the math to prioritize genre matching without completely ignoring the plot overviews.
+#### Recommendation Logic & Mathematical Issues
+- **Max Pooling vs Average Pooling** — Prevented dilution of rare keywords when adding large franchises (e.g., James Bond).
+- **Genre Weighting Boost** — Duplicated genre tags to stop them being overpowered by plot text.
+- **Review Score Multiplier** — Penalised poorly rated films even if text similarity was high.
+- **Foreign Film Handicap** — Applied language-based penalty to reduce irrelevant global-popularity bias.
+- **TMDB Community Keywords Integration** — Bridged vocabulary mismatch (e.g., "dark detective" vs "superhero").
+- **Discovery Temperature** — Added controlled randomness to avoid identical recommendations every time.
 
-### 3. Review Score Multiplier
-**The Problem:** The engine only cared about text similarity. A terrible, universally panned sequel (e.g. *Terminator 3*) would naturally outrank a critically acclaimed masterpiece (e.g. *Terminator 2*) simply because its plot summary shared more identical words.
-**The Solution:** The database now natively extracts TMDB's 1-10 `vote_average` score. The engine calculates the similarity score, and then applies a mathematical modifier: `Final Score = Similarity Score * (Vote Average / 10)`. This allows critically acclaimed films to retain 90%+ of their score, while awful films lose upwards of 60% of their score. 
+#### User Experience & Active Learning
+- **Franchise Discovery Previews** — Show full list + years before bulk-adding.
+- **Epsilon-Greedy Exploration** — Prevented echo chambers by forcing occasional wildcards (20% exploration rate).
+- **Execution vs Taste Split** — Added option to separate "bad execution" from "dislike genre".
+- **Hard Reset** — Full model wipe for fresh cold-start sessions.
+- **Online Search Override** — `fetch [title]` command to bypass local matches for remakes.
 
-### 4. The Foreign Film Handicap
-**The Problem:** TMDB's global `/movie/popular` endpoint returns the most popular movies *globally*. Because the Chinese and Indian domestic markets are massive, their domestic hits (*Baaghi 3*, *The Legend of Hei*) naturally rank in the global Top 4000. Because their overviews were translated to English, the ML engine enthusiastically recommended them alongside Western blockbusters.
-**The Solution:** The database now extracts the `original_language` tag. The ML engine checks this tag and applies a brutal **50% mathematical penalty** to any film that is not natively English (`en`). Foreign films can still appear in your recommendations, but only if they have flawless similarity and extreme critical acclaim to offset the handicap.
+(Additional detailed entries and regression fixes are in the commit history.)
 
-### 5. Franchise Discovery Previews
-**The Problem:** When adding a movie (e.g., *The Godfather*), the engine would detect the franchise and blindly ask: `Would you like to add the entire franchise to your profile? (y/n)`. Users had no idea if the franchise contained 3 films or 27 films.
-**The Solution:** The engine now intercepts the prompt, dynamically fetches the franchise collection from TMDB in real-time, and prints a bulleted preview list of every single movie (and its release year) contained within that collection *before* asking the user to confirm the addition.
+### Testing Approach
+- Chose movies because of strong domain knowledge → rapid oracle-based testing.
+- Added parameterised + randomised Pytest suites for validation.
+- Next step: Design a testing strategy usable by non-domain experts.
 
-### 6. Database Expansion
-**The Problem:** The local offline matrix was hard-capped at 1,000 movies. Older, critically acclaimed films (like the original *John Wick*) had naturally fallen out of the global Top 1000 trending list, meaning they didn't exist in the local dataset and literally could not be recommended.
-**The Solution:** The offline matrix limit was massively expanded to over 4,000 unique movies, ensuring that classic masterpieces and older franchise entries are permanently preserved in the local TF-IDF calculations.
+---
 
-### 7. Dynamic Genre Filtering
-**The Problem:** Because Max Pooling creates a massive, blended profile of everything a user loves (e.g., Action, Romance, Horror), asking for general recommendations often resulted in an overwhelming mix of genres that didn't fit a specific mood.
-**The Solution:** The `recs` command was updated to accept optional genre filters (e.g., `recs 5 Action Comedy`). The engine still relies on the user's entire profile to understand their pacing and textual preferences, but strictly filters the final output to only include movies that match the requested genres.
+**Status**: Experimental / Rapid prototype (started ~1 week ago). The focus has been on applying QA rigour rather than building a polished consumer product.
 
-### 8. The Ingestion Firewall
-**The Problem:** Because TMDB is a crowdsourced database, global queries often return movies with completely blank English overviews, or obscure regional films with entirely non-Latin titles (e.g., Chinese characters). These movies broke the terminal UI and were literally invisible to the text-based TF-IDF engine.
-**The Solution:** An aggressive `is_valid_movie` firewall was bolted onto `fetch_data.py`. It intercepts every single API request and drops any movie that lacks an overview or contains non-Latin characters in its title *before* it can enter the offline dataset. 
-
-### 9. Active Learning Neural Wipe
-**The Problem:** The `main_active.py` script continuously trained its Logistic Regression model on the user's historical `y/n` feedback, but there was no way to reset the model if the user wanted to start a fresh training session.
-**The Solution:** A Hard Reset (`r`) option was added to the Active Learning CLI. Triggering it instantly obliterates the `user_feedback.csv` file, wipes the model from memory, and throws the engine back into "Cold Start" randomized mode.
-
-### 10. TMDB Community Keywords Integration
-**The Problem:** The "Vocabulary Mismatch Problem." Because the TF-IDF engine relies strictly on the literal words present in a movie's plot overview, it mathematically failed to connect movies that were semantically identical but descriptively different (e.g., *The Batman* is described as a "dark detective crime thriller," while *Spiderman* is described as a "superhero saving the world with magic/powers"). 
-**The Solution:** The pipeline was heavily upgraded to actively scrape **TMDB Community Keywords** (e.g., `superhero`, `based on comic`, `spoof`) for every movie. These human-assigned tags are injected directly into the ML feature space with a **2x Mathematical Multiplier**, granting both ML engines immediate semantic awareness and successfully bridging massive vocabulary gaps between related genres.
-
-### 11. Execution vs Taste Split
-**The Problem:** The Active Learning neural network only learns from textual features (genres, keywords, plot). If the UI asked "Do you like this?" and the user voted `n` because the movie was poorly executed (e.g., 2/10 rating), the model incorrectly assumed the user hated the *genre*.
-**The Solution:** A `b = Bad Execution (But I like the genre)` option was added to the quiz. This mathematically records a positive vote (`1`) for the textual features, correctly teaching the model that the user's *taste* aligns with the genre, regardless of the individual film's quality.
-
-### 12. Discovery Temperature
-**The Problem:** Because the Profile Recommendation engine uses a deterministic mathematical matrix, asking for recommendations for a static profile (e.g., `recs horror`) yielded the exact same Top 5 films every single time.
-**The Solution:** A "Discovery Temperature" was injected into the final scoring equation in `recommender_profile.py`. It applies a randomized mathematical penalty (between `0.85` and `1.0`) to every candidate film's score. This gently shuffles the mathematical rankings, allowing close-tie films to bubble to the surface and ensuring completely fresh recommendations on every search.
-
-### 13. Epsilon-Greedy Exploration
-**The Problem:** The Active Learning neural network operated with 100% "Greedy Exploitation," mathematically meaning it *always* returned the #1 highest probability movie. If a user exclusively voted "yes" for one genre, the engine became trapped in a 99% probability echo chamber, refusing to ever test other genres.
-**The Solution:** A classic **Epsilon-Greedy Algorithm** was implemented. The engine rolls a virtual 100-sided die: 80% of the time it performs normal Exploitation, but 20% of the time it enters **Exploration Mode**. In Exploration mode, it explicitly targets a "Wildcard" movie hovering between 30%-70% probability. This systematically tests the user on unfamiliar genres to constantly challenge and widen the decision boundary.
-
-
-### 14. Online Search Override
-**The Problem:** Because the engine prioritized local, offline database searches to save API calls, it would aggressively auto-match the first exact title it found locally. This created a "Remake Trap"—if the local database happened to contain a 2009 remake of a film, but the user wanted the 1980 original, the engine blindly auto-selected the remake and blocked the user from fetching the original.
-**The Solution:** A dedicated `fetch [movie name]` command was added to the Profile Recommender. This explicitly overrides the local database priority, bypassing local matches entirely, and punches straight through to the TMDB API to present a full disambiguation menu of all online results.
-
-### 15. Dynamic CSV Alignment
-**The Problem:** When appending newly fetched movies into the offline CSV, the dictionary keys were being injected out-of-order due to the recent Keywords upgrade. Because pandas appends data row-by-row based on dictionary key order, keyword strings were accidentally written into the `vote_average` column, crashing the ML engine when it attempted to run math on the string data.
-**The Solution:** A hard-coded alignment firewall was added to `fetch_data.py`'s append logic. Before any dynamic fetch is written to disk, the script forcibly drops incompatible columns (like `release_date`) and re-indexes the dictionary keys to perfectly match the 7-column CSV schema, preventing data shifting.
-### 16. Remake Collisions
-**The Problem:** Previously, the engine saved your history as a list of text titles (`["Hellraiser"]`). If you added the 2022 *Hellraiser*, you could never add the 1987 *Hellraiser* because the script thought you already had it!
-**The Solution:** Your history is now tracked entirely by Unique TMDB IDs, rather than text titles. You can now add infinite movies with the exact same name to your profile without the engine locking you out. When the script booted up, it automatically scanned your existing text-based history, found the correct IDs, and safely migrated your entire profile to the new JSON architecture!
-### 17. Pipeline ID Handoff Refactor
-**The Problem:** Even after migrating `user_history.json` to an ID-based schema, the TMDB Search API was returning the title *string* back to the recommender. The recommender would then search the offline dataframe for that string to find its ID, accidentally grabbing the wrong ID if multiple movies shared the same name.
-**The Solution:** The `fetch_data.py` pipeline was refactored to pass the exact TMDB ID securely into the `recommender_profile.py` engine alongside the title, completely bypassing the fatal string-based lookup.
-
-### 18. Release Year Backfill & Disambiguation
-**The Problem:** After adding support for multiple movies with the same name, the CLI simply displayed `- Hellraiser` twice with no contextual data, making it impossible to tell which one was the original and which was the remake.
-**The Solution:** An automated migration script queried the TMDB API to fetch and backfill the release year into `user_history.json` for all existing user movies. The core `fetch` and display pipelines were updated to natively append and present the `(year)` alongside titles to eliminate UI confusion.
-
-### 19. Surgical Remove Command with Franchise Purging
-**The Problem:** The only way to remove a bad recommendation was to use the `clear` command to wipe the entire profile.
-**The Solution:** A dedicated `remove [name]` command was implemented. It features a local disambiguation menu if multiple matches are found in the user's profile. Crucially, it mirrors the "add" workflow: if a user elects to remove a movie that belongs to a franchise, the script detects it and prompts the user to purge the *entire* franchise from their history in one keystroke.
-### 20. Profile Inspection Command
-**The Problem:** To check the current state of their history, users previously had to exit the CLI interface and manually inspect `user_history.json` or reboot the application entirely to trigger the startup printout.
-**The Solution:** A `profile` command was added to the main CLI menu. This command instantly prints out the user's entire history array directly within the terminal, fully formatted with release dates, allowing for rapid verification of additions or removals without breaking workflow.
-### 21. Exact Match Auto-Selection Hijacking
-**The Problem:** The engine featured a "Smart Auto-Selection" feature that would silently auto-pick a movie if the search string was an exact match to the #1 most popular result (to save users from redundant disambiguation menus). However, for legacy public domain characters (like "Sherlock Holmes" or "Dracula"), searching the character's name would instantly auto-select the most famous modern adaptation and aggressively jump straight to the franchise menu, completely robbing the user of the ability to see the other historical adaptations in the search results.
-**The Solution:** The exact-match auto-selection logic was completely removed from both the local search and the TMDB API search pipelines. The engine now ALWAYS prints the disambiguation menu for generic searches, ensuring users can explicitly choose between different adaptations of the same character.
-### 22. Local Search UI Enhancements
-**The Problem:** The local offline search (`movies_dataset.csv`) does not display release years, making it impossible to disambiguate between remakes or adaptations with the exact same name. Additionally, the search results list included movies that were already in the user's profile, cluttering the options with redundant choices.
-**The Solution:** The local search menu was updated to secretly ping the TMDB API in the background just for the top 5 results, dynamically fetching their release years to display in the menu. Both local and online search menus were also updated to cross-reference the user's profile history, appending `(Already in Profile)` to owned movies and preventing them from being selected.
-### 23. Search Pagination & Multi-Select
-**The Problem:** Both the local search and the online TMDB fetch search were hardcoded to only display the top 5 most popular matches. If a user searched for a prolific legacy character (e.g. "Sherlock Holmes" or "Dracula"), they were unable to see or select adaptations outside the top 5. Furthermore, the selection prompt only allowed adding one movie at a time, making adding multiple standalone movies extremely tedious.
-**The Solution:** Both search menus were completely rewritten to support a `Show more results...` loop, allowing users to page through all 20+ TMDB API results or local matches. In addition, the input prompt was upgraded to support comma-separated Multi-Select (e.g., `1, 3, 4`), allowing users to instantly select and import a dozen different adaptations at the exact same time.
-
-### 24. Single-Match UX & Pagination Polish
-**The Problem:** The introduction of the pagination menu created a poor UX for unique movies. Searching for a film with exactly 1 result (e.g. "They Live") still printed a full pagination menu and asked the user to manually type "1", which was tedious. Furthermore, the menu still offered an `N. Next Page` option even if there were 5 or fewer total results, leading to confusing pagination wraparounds.
-**The Solution:** The local search logic was updated to automatically bypass the selection menu and instantly import the movie if exactly 1 match is found in the offline dataset. Additionally, the `N. Next Page` prompt is now dynamically hidden in both local and online searches if the total number of results fits onto a single page.
-
-### 25. Multi-Select Graceful Degradation
-**The Problem:** When using the new multi-select input (e.g., `1, 2, 3, 4`), if any of the selected numbers corresponded to a movie the user already had in their profile, the validation logic would reject the *entire* comma-separated string and throw an "Invalid choice" error, forcing the user to retype the numbers without the invalid index.
-**The Solution:** The multi-select parsing logic was updated to gracefully skip indices that correspond to already-owned movies while continuing to parse and append the valid selections from the rest of the string.
-
-### 26. Pre-Filtering Search Results & Automatic TMDB Fallback
-**The Problem:** Search results (both local and online) displayed movies the user already owned, merely appending `(Already in profile)` next to them. This unnecessarily cluttered the selection menus.
-**The Solution:** The engine now aggressively pre-filters the search datasets before generating the pagination menu, completely removing already-owned movies. As an added benefit, if the user searches the local offline database for a franchise they entirely own (e.g., "Gremlins"), the engine correctly identifies that there are 0 *new* movies available offline and seamlessly triggers an automatic fallback to the live TMDB API to hunt for unowned sequels or adaptations.
-
-### 27. Word Boundary Enforcement for Local Searches
-**The Problem:** The offline dataset search used basic substring matching. If a user searched for "Omen" (expecting "The Omen"), the engine would retrieve every single movie containing the substring "omen", resulting in an entire menu filled with movies featuring the word "Women".
-**The Solution:** The local pandas search query was rewritten to use strict Regex word boundaries (`\b`). The offline search will now only match exact, standalone words, bringing its search intelligence closer to TMDB's native search API.
-
-### 28. Recommendation Blacklist (Ignore List)
-**The Problem:** The user occasionally received recommendations for movies they had seen but disliked or had no intention of ever watching. Leaving them in the recommendations was annoying, but officially adding them to the profile would artificially skew the ML model into thinking the user enjoyed those types of films.
-**The Solution:** A dedicated `ignore [name]` command was added to the main menu. This command leverages the exact same intelligent multi-select and franchise-detection pipeline as the normal add command, but saves the films to a separate `user_ignore_list.json`. The recommendation engine and search pipelines were completely refactored to silently filter out any blacklisted movies before generating recommendations or search results, allowing users to permanently banish films without affecting their profile.
-
-## Automated Testing
-This project uses `pytest` for automated testing. The test suite guarantees that core data filtering, API fallback mechanisms, and profile updates work correctly without regressions.
-
-### Running the tests
-1. Install development dependencies:
-   ```bash
-   pip install -r requirements-dev.txt
-   ```
-2. Execute the test suite:
-   ```bash
-   python -m pytest tests/
-   ```
-
-### Test Architecture
-- **Safety**: The tests use temporary directories and mocked files (`pytest`'s `tmp_path`), meaning they will **never** overwrite or corrupt your actual `user_history.json` or `user_ignore_list.json`.
-- **Speed & Rate-Limits**: The `test_fetch.py` suite utilizes `pytest-mock` to intercept and mock the live TMDB HTTP requests, ensuring tests execute instantly without an internet connection or exhausting API rate limits.
+Feel free to explore the code and tests. Feedback welcome!
