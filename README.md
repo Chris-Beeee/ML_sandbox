@@ -147,6 +147,7 @@ I used this project to deliberately apply structured QA thinking to ML developme
 - Franchise Previews and Execution vs Taste split for better user control.
 - Online Search Override for remakes and Hard Reset for cold starts.
 
+*(Note: The log below is not an exhaustive list. It highlights medium and high-priority issues; there were over 10 minor issues resolved that did not make this list.)*
 
 <details>
 <summary><strong>Click here to view the full, detailed QA Issues Log (Issues 1-28)</strong></summary>
